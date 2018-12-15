@@ -1,103 +1,240 @@
-import requests
+import pprint
 import webbrowser
+import os
+import emoji
 import tkinter as tk
 from tkinter import ttk
-from bs4 import BeautifulSoup
+from puresnmp import walk, get
 
-def ignoreTray(soup,tray):
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller. Found on stackoverflow """
     try:
-        filename = soup.body.find(text=tray).parent.parent.img['src']
-        if filename=='/images/deviceStP100_16.gif':
-            return 100
-        elif filename=='/images/deviceStP75_16.gif':
-            return 75
-        elif filename=='/images/deviceStP50_16.gif':
-            return 50
-        elif filename=='/images/deviceStP25_16.gif':
-            return 25
-        elif filename=='/images/deviceStPNend16.gif':
-            return 5
-        elif filename=='/images/deviceStPend16.gif':
-            return 0
-        elif filename=='/images/deviceStError16.gif':
-            return 'Error'
-    except:
-        return -1
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
-def errCheck(tray):
-    if bool(type(tray)==int):
-        return tray
-    elif bool(type(tray)==str):
-        return -1
+def  myWalk(IP, OID):
+    """ Creates a list of StringVar from walk result """
+    results=[]
+    for row in walk(IP, 'public', OID):
+        newResult=tk.StringVar()
+        if type(row[1])==bytes:
+            value=row[1].decode('utf=8')
+        else:
+            value=row[1]
+        newResult.set(value)
+        results.append(newResult)
+    if len(results)==0:
+        newResult=tk.StringVar()
+        newResult.set('')
+        results.append(newResult)
+    return results
 
-root = tk.Tk()
-root.title('Ricoh Resource Monitor')
-tk.Label(root, text="Ricoh Resource Monitor", font=(None,15)).grid(row=0, pady=5,columnspan=2)
+def mySet(varList, walkResults, index):
+    """ Updates a list of StringVars with new values, accounting for possible change in list length """
+    if len(varList[index])>len(walkResults):
+        for i in range(len(varList[index])-len(walkResults)):
+            newEntry=tk.StringVar()
+            newEntry.set('')
+            walkResults.append(newEntry)
+    elif len(varList[index])<len(walkResults):
+        for i in range(len(walkResults)-len(varList[index])):
+            newEntry=tk.StringVar()
+            newEntry.set('')
+            varList[index].append(newEntry)
+    if type(varList[index])==list:
+        for q,item in enumerate(varList[index]):
+            varList[index][q].set(walkResults[q].get())
+    elif type(varList[index])==dict:
+        for q,item in enumerate(varList[index]):
+            varList[index][item].set(walkResults[q].get())
+    return varList
 
+def imgGet(string, printers, index):
+    """ Returns proper image name from Model OID and presence of LCT """
+    check=0
+    if string == 'MP C6004ex':
+        return c6004ex
+    elif string == 'MP C3504ex':
+        return c3504ex
+    elif string == 'MP C6503':
+        for i,tray in enumerate(printers[index]['Trays']):
+            if list(tray.keys())[0] == 'LCT':
+                check=1
+                return  c6503f
+        if check!=1:
+            return c6503
+            
 printers=[
           {'IP':'172.18.181.227','Name':'CI-121'},
           {'IP':'172.18.166.19','Name':'CI202-L'},
           {'IP':'172.18.166.92','Name':'CI202-R'},
-##          {'IP':'172.18.181.232','Name':'CI-214'},
-##          {'IP':'172.18.181.244','Name':'CI-301'},
+          #{'IP':'172.18.181.232','Name':'CI-214'},
+          #{'IP':'172.18.181.244','Name':'CI-301'},
           {'IP':'172.18.181.231','Name':'CI-335'},
-##          {'IP':'172.18.181.230','Name':'CI-DO'},
+          #{'IP':'172.18.181.230','Name':'CI-DO'},
           {'IP':'172.18.178.120','Name':'SDW-FL2'},
           {'IP':'172.18.177.204','Name':'ANX-A'},
           {'IP':'172.19.55.10','Name':'ANX-B'},
-##          {'IP':'172.18.186.18','Name':'RH-204'},
+          #{'IP':'172.18.186.18','Name':'RH-204'},
           ]
 
-for i,item in enumerate(printers):
-    url='http://' + item['IP'] + '/web/guest/en/websys/webArch/getStatus.cgi'
-    try:
-        page=requests.get(url)
-    except requests.exceptions.RequestException as e:
-        print(e)
-        tk.Label(root, text=printers[i]['Name']+' - OFFLINE').grid(row=1,column=i)
-        tk.Button(root, text='Link', command=lambda: webbrowser.open(url)).grid(row=2, column=i, pady=(8,10))
-        canvas=tk.Canvas(width=140, height=42)
-        canvas.grid(row=3, column=i, pady=2)
-        continue
-    soup=BeautifulSoup(page.text,'html.parser')
-    printers[i]['black']=(float(soup.find('img',{"src":"/images/deviceStTnBarK.gif"})['width'])/160)*100
-    printers[i]['cyan']=(float(soup.find('img',{"src":"/images/deviceStTnBarC.gif"})['width'])/160)*100
-    printers[i]['magenta']=(float(soup.find('img',{"src":"/images/deviceStTnBarM.gif"})['width'])/160)*100
-    printers[i]['yellow']=(float(soup.find('img',{"src":"/images/deviceStTnBarY.gif"})['width'])/160)*100
-    printers[i]['Tray 1']=ignoreTray(soup,'Tray 1') if ignoreTray(soup,'Tray 1') != -1 else ignoreTray(soup,'Paper Tray 1')
-    printers[i]['Tray 2']=ignoreTray(soup,'Tray 2') if ignoreTray(soup,'Tray 2') != -1 else ignoreTray(soup,'Paper Tray 2')
-    printers[i]['Tray 3']=max({ignoreTray(soup, 'Tray 3'),ignoreTray(soup,'Paper Tray 3'),ignoreTray(soup,'Paper Tray 3 (LCT)')})
-    if ignoreTray(soup,'Paper Tray 4') != -1:
-        printers[i]['Tray 4']=ignoreTray(soup,'Paper Tray 4')
-    if ignoreTray(soup,'LCT') != -1:
-        printers[i]['LCT']=ignoreTray(soup,'LCT')
-    tk.Label(root, text=printers[i]['Name']).grid(row=1,column=i)
-    tk.Button(root, text='Link', command=lambda aurl=url:webbrowser.open(aurl)).grid(row=2, column=i, pady=(8,10))
-    canvas=tk.Canvas(width=140, height=42)
-    canvas.grid(row=3, column=i, pady=2)
-    canvas.create_rectangle(0,2,100,11,fill='#abb2b9')
-    canvas.create_rectangle(0,12,100,21,fill='#abb2b9')
-    canvas.create_rectangle(0,22,100,31,fill='#abb2b9')
-    canvas.create_rectangle(0,32,100,41,fill='#abb2b9')
-    canvas.create_rectangle(0,2,printers[i]['black'],11,fill='#000000')
-    canvas.create_rectangle(0,12,printers[i]['cyan'],21,fill='#00FFFF')
-    canvas.create_rectangle(0,22,printers[i]['magenta'],31,fill='#FF00FF')
-    canvas.create_rectangle(0,32,printers[i]['yellow'],41,fill='#FFFF00')
-    canvas.create_text(115,7,text=str(int(printers[i]['black']))+'%',font=(None,8),fill='red' if int(printers[i]['black'])<=20 else 'black')
-    canvas.create_text(115,17,text=str(int(printers[i]['cyan']))+'%',font=(None,8),fill='red' if int(printers[i]['cyan'])<=20 else 'black')
-    canvas.create_text(115,27,text=str(int(printers[i]['magenta']))+'%',font=(None,8),fill='red' if int(printers[i]['magenta'])<=20 else 'black')
-    canvas.create_text(115,37,text=str(int(printers[i]['yellow']))+'%',font=(None,8),fill='red' if int(printers[i]['yellow'])<=20 else 'black')
-    papercanvas=tk.Canvas(width=130, height=75)
-    papercanvas.grid(row=4, column=i)
-    papercanvas.create_text(5,6,text="Tray 1: " + str(printers[i]['Tray 1'])+('%' if errCheck(printers[i]['Tray 1'])>=0 else ''),anchor=tk.W,fill='red' if errCheck(printers[i]['Tray 1']) <=25 else 'black')
-    papercanvas.create_text(5,21,text="Tray 2: " + str(printers[i]['Tray 2'])+('%' if errCheck(printers[i]['Tray 2'])>=0 else ''),anchor=tk.W,fill='red' if errCheck(printers[i]['Tray 2']) <=25 else 'black')
-    papercanvas.create_text(5,36,text="Tray 3: " + str(printers[i]['Tray 3'])+('%' if errCheck(printers[i]['Tray 3'])>=0 else ''),anchor=tk.W,fill='red' if errCheck(printers[i]['Tray 3']) <=25 else 'black')
-    offset=0
-    if 'Tray 4' in printers[i]:
-        papercanvas.create_text(5,51,text="Tray 4: " + str(printers[i]['Tray 4'])+('%' if errCheck(printers[i]['Tray 4'])>=0 else ''),anchor=tk.W,fill='red' if errCheck(printers[i]['Tray 4']) <=25 else 'black')
-        offset=15
-    if 'LCT' in printers[i]:
-        papercanvas.create_text(5,51+offset,text="LCT: " + str(printers[i]['LCT'])+('%' if errCheck(printers[i]['LCT'])>=0 else ''),anchor=tk.W,fill='red' if errCheck(printers[i]['LCT']) <=25 else 'black')
-    print(item['Name'] + " done...")
+ModelOID = '.1.3.6.1.2.1.43.5.1.1.16.1'
+SerialOID = '.1.3.6.1.2.1.43.5.1.1.17.1'
+InkNames_baseOID = '.1.3.6.1.2.1.43.11.1.1.6'
+InkLevels_baseOID = '.1.3.6.1.2.1.43.11.1.1.9.1'
+TrayNames_baseOID = '.1.3.6.1.2.1.43.8.2.1.13'
+TrayMaxCap_baseOID = '.1.3.6.1.2.1.43.8.2.1.9.1'
+TrayCurrCap_baseOID = '.1.3.6.1.2.1.43.8.2.1.10.1'
+Err_baseOID = '.1.3.6.1.2.1.43.18.1.1.8.1'
 
+root=tk.Tk()
+root.title('Ricoh Resource Monitor')
+root.iconbitmap(resource_path('icon.ico'))
+
+s=ttk.Style()
+s.theme_use('alt')
+s.configure('black.Horizontal.TProgressbar', background='black')
+s.configure('cyan.Horizontal.TProgressbar', background='cyan')
+s.configure('magenta.Horizontal.TProgressbar', background='magenta')
+s.configure('yellow.Horizontal.TProgressbar', background='yellow')
+
+#Create a list of styles to iterate through later
+styles=['black.Horizontal.TProgressbar',
+        'cyan.Horizontal.TProgressbar',
+        'magenta.Horizontal.TProgressbar',
+        'yellow.Horizontal.TProgressbar',]
+
+c3504ex = tk.PhotoImage(file=resource_path('c3504ex.png')).subsample(4, 4)
+c6004ex = tk.PhotoImage(file=resource_path('c6004ex.png')).subsample(4, 4)
+c6503 = tk.PhotoImage(file=resource_path('c6503.png')).subsample(4, 4)
+c6503f = tk.PhotoImage(file=resource_path('c6503f.png')).subsample(4, 4)
+
+#Define the main index value early so I can define localReload outside of the loop
+i=0
+
+#Create the master lists of StringVars. These are the value that will be updated upon a reload
+alertVarsList=[]
+inkVarsList=[]
+currTrayVarsList=[]
+
+localReload=lambda i=i:(mySet(alertVarsList, myWalk(printers[i]['IP'], Err_baseOID),i ),
+                          mySet(inkVarsList, myWalk(printers[i]['IP'], InkLevels_baseOID),i ),
+                          mySet(currTrayVarsList, myWalk(printers[i]['IP'], TrayCurrCap_baseOID),i ))
+
+for i,item in enumerate(printers):
+    #Begin gathering information
+    printers[i]['Model']=get(printers[i]['IP'], 'public', ModelOID).decode('utf-8')
+    
+    inkNames=[]
+    for row in walk(printers[i]['IP'], 'public', InkNames_baseOID):
+        inkNames.append(row[1].decode('utf-8'))  
+    Inks=[] #Will hold ink names and current level
+    tempInkVarList={}
+    for inkIndex in range(len(inkNames)):
+        inkLevel=get(printers[i]['IP'], 'public', InkLevels_baseOID+'.'+str(inkIndex+1))
+        newInk=tk.StringVar()
+        newInk.set(inkLevel)
+        tempInkVarList[inkNames[inkIndex]]=newInk
+        Inks.append({inkNames[inkIndex]:inkLevel})
+    inkVarsList.append(tempInkVarList)
+    printers[i]['Inks']=Inks
+    
+    trayNames=[]
+    for row in walk(printers[i]['IP'], 'public', TrayNames_baseOID):
+        trayNames.append(row[1].decode('utf-8'))
+    Trays=[] #Will hold tray names and current/max paper levels
+    tempTrayVarList={}
+    for trayIndex in range(len(trayNames)):
+        currLevel=get(printers[i]['IP'], 'public', TrayCurrCap_baseOID+'.'+str(trayIndex+1))
+        maxLevel=get(printers[i]['IP'], 'public', TrayMaxCap_baseOID+'.'+str(trayIndex+1))
+        newTray=tk.StringVar()
+        newTray.set(currLevel)
+        tempTrayVarList[trayNames[trayIndex]]=newTray
+        Trays.append({trayNames[trayIndex]:{'maxLevel':maxLevel,'currLevel':currLevel}})
+    currTrayVarsList.append(tempTrayVarList)
+    printers[i]['Trays']=Trays
+    
+    Alerts=[]
+    for row in walk(printers[i]['IP'], 'public', Err_baseOID):
+        Alerts.append(row[1].decode('utf-8'))
+    printers[i]['Alerts']=Alerts
+    alertVarsList.append(myWalk(printers[i]['IP'], Err_baseOID))
+    
+    #Begin drawing frames
+    printerFrame = tk.Frame(root, padx=17)
+    #printerFrame.grid(row=1, column=i)
+    printerFrame.pack(side=tk.LEFT, fill=tk.Y)
+    
+    Name=tk.Label(printerFrame, text=printers[i]['Name'], font=(None, 14))
+    Name.grid(row=0, column=i)
+    IP=tk.Label(printerFrame, text=printers[i]['IP'], font=(None, 8))
+    IP.grid(row=2, column=i)
+    Model=tk.Label(printerFrame, text=printers[i]['Model'], font=(None, 9))
+    Model.grid(row=1, column=i)
+    
+    buttonFrame  = tk.Frame(printerFrame)
+    url='http://' + printers[i]['IP'] + '/web/guest/en/websys/webArch/getStatus.cgi'
+    linkButton = tk.Button(buttonFrame, text="Link", command=lambda aurl=url:webbrowser.open(aurl))
+    linkButton.pack(side=tk.LEFT)
+    reloadButton = tk.Button(buttonFrame, text="Reload", command=localReload)
+    reloadButton.pack(side=tk.RIGHT)
+    buttonFrame.grid(row=3, column=i)
+
+    alertFrame = tk.Frame(printerFrame)
+    for item, alert in enumerate(alertVarsList[i]):
+        alert = tk.Label(alertFrame, textvariable=alertVarsList[i][item], fg='red')
+        alert.pack()
+    alertFrame.grid(row=4, column=i)
+
+    printerImageCanvas = tk.Canvas(printerFrame, width=135, height=140)
+    printerImageCanvas.grid(row=5, column=i)
+    printerImageCanvas.create_image(135, 140, image=imgGet(printers[i]['Model'], printers, i), anchor='se')
+    
+    inkFrame=tk.Frame(printerFrame)
+    counter=0
+    for t, ink in enumerate(inkVarsList[i]):
+        if t==1:
+            #Skip the waste toner 
+            continue
+        
+        Frame=tk.Frame(inkFrame)
+        
+        Bar=ttk.Progressbar(Frame, variable=inkVarsList[i][ink], style=styles[counter])
+        Bar.pack(side=tk.LEFT)
+        
+        Label=tk.Label(Frame, textvariable=inkVarsList[i][ink], bd=0, width=3)
+        percent=tk.Label(Frame, text='%', bd=0)
+        percent.pack(side=tk.RIGHT)
+        Label.pack(side=tk.RIGHT)
+        
+        Frame.pack()
+        counter+=1
+    inkFrame.grid(row=6, column=i)
+
+    trayFrame=tk.Frame(printerFrame)
+    for u, tray in enumerate(currTrayVarsList[i]):
+        Frame=tk.Frame(trayFrame)
+
+        trayName=tk.Label(Frame, text=list(printers[i]['Trays'][u].keys())[0]+':', anchor='w', width=9)
+        trayName.pack(side=tk.LEFT)
+        
+        trayCurrLevel=tk.Label(Frame, textvariable=currTrayVarsList[i][tray], width=5, anchor='e')
+        trayMaxLevel=tk.Label(Frame, text='/ '+str(printers[i]['Trays'][u][tray]['maxLevel']), width=5, anchor='e')
+        trayMaxLevel.pack(side=tk.RIGHT)
+        trayCurrLevel.pack(side=tk.RIGHT)
+        
+        Frame.pack()
+    trayFrame.grid(row=7, column=i, pady=20)
+    
+    print("Done: " + printers[i]['Name'])
+
+def masterReload():
+    for masterReloadIndex in range(len(printers)):
+        mySet(alertVarsList, myWalk(printers[masterReloadIndex]['IP'], Err_baseOID),masterReloadIndex )
+        mySet(inkVarsList, myWalk(printers[masterReloadIndex]['IP'], InkLevels_baseOID),masterReloadIndex )
+        mySet(currTrayVarsList, myWalk(printers[masterReloadIndex]['IP'], TrayCurrCap_baseOID),masterReloadIndex )
+
+tk.Button(root, text='R\ne\nl\no\na\nd\n\nA\nl\nl', command=masterReload, bg='deep sky blue', activebackground='DeepSkyBlue4').pack(side=tk.RIGHT)
 root.mainloop()
