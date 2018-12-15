@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['ricoh2.py'],
-             pathex=['C:\\Users\\Emilio\\Documents\\Schoolwork 16th Grade\\Ricoh Resource Reader\\ricohreader1214'],
+             pathex=['project-path'],
              binaries=[],
              datas=[('.\\c3504ex.png','.'),('.\\c6004ex.png','.'),('.\\c6503.png','.'),('.\\c6503f.png','.'),('.\\icon.ico','.')],
              hiddenimports=[],
