@@ -1,5 +1,5 @@
 # Ricoh-Resource-Monitor
-Small program that monitors ink and paper tray levels at work. I didn't want to manually checking every individual printer, so this program checks them all at once.
+Small program that monitors ink and paper tray levels at work. I didn't want to manually check every individual printer, so this program checks them all at once.
 
 <img src="https://i.imgur.com/5KxJ17n.png" alt="Ricoh Resource Monitor screenshot">
 
@@ -23,7 +23,7 @@ Small program that monitors ink and paper tray levels at work. I didn't want to 
 
 ## <a name="How">How it works</a>
 
-All of the printers are networked with publicly avilable SNMP values. This program grabs the values and displays them in a nice TkInter window.
+All of the printers are networked with publicly available SNMP values. This program grabs the values and displays them in a nice TkInter window.
 
 ## <a name="future">Future improvements</a>
 <ul>
