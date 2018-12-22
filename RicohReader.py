@@ -1,7 +1,6 @@
 import pprint
 import webbrowser
 import os
-import emoji
 import tkinter as tk
 from tkinter import ttk
 from puresnmp import walk, get
@@ -92,6 +91,11 @@ Err_baseOID = '.1.3.6.1.2.1.43.18.1.1.8.1'
 root=tk.Tk()
 root.title('Ricoh Resource Monitor')
 root.iconbitmap(resource_path('icon.ico'))
+masterPrinterFrame = tk.Frame(root)
+
+totalMax=0 #Total paper capacity of all printers
+deficit=tk.IntVar() #Amount of paper that needs to be refilled
+reams=tk.IntVar() #Number of reams needed to refill
 
 s=ttk.Style()
 s.theme_use('alt')
@@ -110,6 +114,7 @@ c3504ex = tk.PhotoImage(file=resource_path('c3504ex.png')).subsample(4, 4)
 c6004ex = tk.PhotoImage(file=resource_path('c6004ex.png')).subsample(4, 4)
 c6503 = tk.PhotoImage(file=resource_path('c6503.png')).subsample(4, 4)
 c6503f = tk.PhotoImage(file=resource_path('c6503f.png')).subsample(4, 4)
+link = tk.PhotoImage(file=resource_path('link.png')).subsample(34, 34)
 
 #Define the main index value early so I can define localReload outside of the loop
 i=0
@@ -118,10 +123,6 @@ i=0
 alertVarsList=[]
 inkVarsList=[]
 currTrayVarsList=[]
-
-localReload=lambda i=i:(mySet(alertVarsList, myWalk(printers[i]['IP'], Err_baseOID),i ),
-                          mySet(inkVarsList, myWalk(printers[i]['IP'], InkLevels_baseOID),i ),
-                          mySet(currTrayVarsList, myWalk(printers[i]['IP'], TrayCurrCap_baseOID),i ))
 
 for i,item in enumerate(printers):
     #Begin gathering information
@@ -143,9 +144,11 @@ for i,item in enumerate(printers):
     
     trayNames=[]
     for row in walk(printers[i]['IP'], 'public', TrayNames_baseOID):
-        trayNames.append(row[1].decode('utf-8'))
+        #if row[1].decode('utf-8') != 'Bypass Tray':
+            trayNames.append(row[1].decode('utf-8'))
     Trays=[] #Will hold tray names and current/max paper levels
     tempTrayVarList={}
+    tempMax=0 #Total paper capacity of current printer
     for trayIndex in range(len(trayNames)):
         currLevel=get(printers[i]['IP'], 'public', TrayCurrCap_baseOID+'.'+str(trayIndex+1))
         maxLevel=get(printers[i]['IP'], 'public', TrayMaxCap_baseOID+'.'+str(trayIndex+1))
@@ -153,7 +156,9 @@ for i,item in enumerate(printers):
         newTray.set(currLevel)
         tempTrayVarList[trayNames[trayIndex]]=newTray
         Trays.append({trayNames[trayIndex]:{'maxLevel':maxLevel,'currLevel':currLevel}})
+        tempMax+=maxLevel
     currTrayVarsList.append(tempTrayVarList)
+    totalMax+=tempMax
     printers[i]['Trays']=Trays
     
     Alerts=[]
@@ -163,24 +168,23 @@ for i,item in enumerate(printers):
     alertVarsList.append(myWalk(printers[i]['IP'], Err_baseOID))
     
     #Begin drawing frames
-    printerFrame = tk.Frame(root, padx=17)
+    printerFrame = tk.Frame(masterPrinterFrame, padx=17)
     #printerFrame.grid(row=1, column=i)
     printerFrame.pack(side=tk.LEFT, fill=tk.Y)
+
+    nameFrame = tk.Frame(printerFrame)
+    Name=tk.Label(nameFrame, text=printers[i]['Name'], font=(None, 14))
+    Name.pack(side=tk.LEFT)
+    url='http://' + printers[i]['IP'] + '/web/guest/en/websys/webArch/getStatus.cgi'
+    linkButton = tk.Button(nameFrame, command=lambda aurl=url:webbrowser.open(aurl))
+    linkButton.config(image=link)
+    linkButton.pack(side=tk.RIGHT, padx=5)
+    nameFrame.grid(row=0, column=i)
     
-    Name=tk.Label(printerFrame, text=printers[i]['Name'], font=(None, 14))
-    Name.grid(row=0, column=i)
     IP=tk.Label(printerFrame, text=printers[i]['IP'], font=(None, 8))
     IP.grid(row=2, column=i)
     Model=tk.Label(printerFrame, text=printers[i]['Model'], font=(None, 9))
     Model.grid(row=1, column=i)
-    
-    buttonFrame  = tk.Frame(printerFrame)
-    url='http://' + printers[i]['IP'] + '/web/guest/en/websys/webArch/getStatus.cgi'
-    linkButton = tk.Button(buttonFrame, text="Link", command=lambda aurl=url:webbrowser.open(aurl))
-    linkButton.pack(side=tk.LEFT)
-    reloadButton = tk.Button(buttonFrame, text="Reload", command=localReload)
-    reloadButton.pack(side=tk.RIGHT)
-    buttonFrame.grid(row=3, column=i)
 
     alertFrame = tk.Frame(printerFrame)
     for item, alert in enumerate(alertVarsList[i]):
@@ -215,14 +219,19 @@ for i,item in enumerate(printers):
 
     trayFrame=tk.Frame(printerFrame)
     for u, tray in enumerate(currTrayVarsList[i]):
+        if tray == 'Bypass Tray':
+            #Bypass tray doesn't need to be refilled - no sense monitoring it
+            continue
         Frame=tk.Frame(trayFrame)
 
         trayName=tk.Label(Frame, text=list(printers[i]['Trays'][u].keys())[0]+':', anchor='w', width=9)
         trayName.pack(side=tk.LEFT)
         
         trayCurrLevel=tk.Label(Frame, textvariable=currTrayVarsList[i][tray], width=5, anchor='e')
-        trayMaxLevel=tk.Label(Frame, text='/ '+str(printers[i]['Trays'][u][tray]['maxLevel']), width=5, anchor='e')
+        trayMaxLevel=tk.Label(Frame, text=str(printers[i]['Trays'][u][tray]['maxLevel']), width=3, anchor='e')
+        slash=tk.Label(Frame, text='/', anchor='e')
         trayMaxLevel.pack(side=tk.RIGHT)
+        slash.pack(side=tk.RIGHT)
         trayCurrLevel.pack(side=tk.RIGHT)
         
         Frame.pack()
@@ -230,11 +239,41 @@ for i,item in enumerate(printers):
     
     print("Done: " + printers[i]['Name'])
 
+def getDeficit():
+    deficit.set(0)
+    for i in range(len(currTrayVarsList)):
+            for key in currTrayVarsList[i]:
+                    deficit.set(deficit.get()+int(currTrayVarsList[i][key].get()))
+    deficit.set(totalMax-deficit.get()-len(printers)*100) #Subtract 100 per printer to avoid including bypass tray
+    reams.set(deficit.get()/500)
+    
+getDeficit()
+
 def masterReload():
     for masterReloadIndex in range(len(printers)):
         mySet(alertVarsList, myWalk(printers[masterReloadIndex]['IP'], Err_baseOID),masterReloadIndex )
         mySet(inkVarsList, myWalk(printers[masterReloadIndex]['IP'], InkLevels_baseOID),masterReloadIndex )
         mySet(currTrayVarsList, myWalk(printers[masterReloadIndex]['IP'], TrayCurrCap_baseOID),masterReloadIndex )
+        getDeficit()
 
-tk.Button(root, text='R\ne\nl\no\na\nd\n\nA\nl\nl', command=masterReload, bg='deep sky blue', activebackground='DeepSkyBlue4').pack(side=tk.RIGHT)
+infoFrame = tk.Frame(root)
+
+info = tk.Frame(infoFrame)
+deficitLabel = tk.Label(info, text='Current deficit: ')
+reamLabel = tk.Label(info, text='| Suggested reams: ')
+deficitCount = tk.Label(info, textvariable=deficit)
+reamCount = tk.Label(info, textvariable=reams)
+deficitLabel.pack(side=tk.LEFT)
+deficitCount.pack(side=tk.LEFT)
+reamLabel.pack(side=tk.LEFT)
+reamCount.pack(side=tk.LEFT)
+info.pack(side=tk.RIGHT)
+
+
+masterReloadButton = tk.Button(infoFrame, text='Reload', command=masterReload, bg='light blue', activebackground='steel blue')
+masterReloadButton.pack(side=tk.LEFT, padx=2, pady=2)
+masterPrinterFrame.pack(side=tk.TOP)
+
+infoFrame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
 root.mainloop()
