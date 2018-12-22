@@ -27,7 +27,8 @@ All of the printers are networked with publicly available SNMP values. This prog
 
 ## <a name="future">Future improvements</a>
 <ul>
-  <li>~~Clean up presentation/alignment~~</li>
+  <li><del>Clean up presentation/alignment</del></li>
   <li>Red text when values fall below a certain threshold</li>
   <li>Tray percentages</li>
+  <li>Move images to dedicated images folder</li>
 </ul>
