@@ -3,10 +3,10 @@
 block_cipher = None
 
 
-a = Analysis(['ricoh2.py'],
+a = Analysis(['project-name.py'],
              pathex=['project-path'],
              binaries=[],
-             datas=[('.\\c3504ex.png','.'),('.\\c6004ex.png','.'),('.\\c6503.png','.'),('.\\c6503f.png','.'),('.\\icon.ico','.')],
+             datas=[('.\\c3504ex.png','.'),('.\\c6004ex.png','.'),('.\\c6503.png','.'),('.\\c6503f.png','.'),('.\\icon.ico','.'),('.\\link.ico','.')],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
