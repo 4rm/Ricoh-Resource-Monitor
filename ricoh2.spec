@@ -3,10 +3,10 @@
 block_cipher = None
 
 
-a = Analysis(['project-name.py'],
-             pathex=['project-path'],
+a = Analysis(['RicohReader.py'],
+             pathex=['C:\\Users\\...full_project_path'],
              binaries=[],
-             datas=[('.\\c3504ex.png','.'),('.\\c6004ex.png','.'),('.\\c6503.png','.'),('.\\c6503f.png','.'),('.\\icon.ico','.'),('.\\link.ico','.')],
+             datas=[('.\\images\\c3504ex.png','.'),('.\\images\\c6004ex.png','.'),('.\\images\\c6503.png','.'),('.\\images\\c6503f.png','.'),('.\\images\\icon.ico','.'),('.\\images\\link.png','.')],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
@@ -21,6 +21,7 @@ pyz = PYZ(a.pure, a.zipped_data,
 exe = EXE(pyz,
           a.scripts,
           a.binaries,
+		  Tree('.\\images',  prefix='images\\'),
           a.zipfiles,
           a.datas,
           [],
@@ -31,5 +32,5 @@ exe = EXE(pyz,
           upx=True,
           runtime_tmpdir=None,
           console=False,
-		  icon='icon.ico'
+		  icon='.\\images\\icon.ico'
 			)
