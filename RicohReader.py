@@ -90,7 +90,7 @@ Err_baseOID = '.1.3.6.1.2.1.43.18.1.1.8.1'
 
 root=tk.Tk()
 root.title('Ricoh Resource Monitor')
-root.iconbitmap(resource_path('icon.ico'))
+root.iconbitmap(resource_path('images/icon.ico'))
 masterPrinterFrame = tk.Frame(root)
 
 totalMax=0 #Total paper capacity of all printers
@@ -110,11 +110,11 @@ styles=['black.Horizontal.TProgressbar',
         'magenta.Horizontal.TProgressbar',
         'yellow.Horizontal.TProgressbar',]
 
-c3504ex = tk.PhotoImage(file=resource_path('c3504ex.png')).subsample(4, 4)
-c6004ex = tk.PhotoImage(file=resource_path('c6004ex.png')).subsample(4, 4)
-c6503 = tk.PhotoImage(file=resource_path('c6503.png')).subsample(4, 4)
-c6503f = tk.PhotoImage(file=resource_path('c6503f.png')).subsample(4, 4)
-link = tk.PhotoImage(file=resource_path('link.png')).subsample(34, 34)
+c3504ex = tk.PhotoImage(file=resource_path('images/c3504ex.png')).subsample(4, 4)
+c6004ex = tk.PhotoImage(file=resource_path('images/c6004ex.png')).subsample(4, 4)
+c6503 = tk.PhotoImage(file=resource_path('images/c6503.png')).subsample(4, 4)
+c6503f = tk.PhotoImage(file=resource_path('images/c6503f.png')).subsample(4, 4)
+link = tk.PhotoImage(file=resource_path('images/link.png')).subsample(40, 40)
 
 #Define the main index value early so I can define localReload outside of the loop
 i=0
@@ -123,6 +123,7 @@ i=0
 alertVarsList=[]
 inkVarsList=[]
 currTrayVarsList=[]
+trayFillPercent=[]
 
 for i,item in enumerate(printers):
     #Begin gathering information
@@ -145,19 +146,24 @@ for i,item in enumerate(printers):
     trayNames=[]
     for row in walk(printers[i]['IP'], 'public', TrayNames_baseOID):
         #if row[1].decode('utf-8') != 'Bypass Tray':
-            trayNames.append(row[1].decode('utf-8'))
+            trayNames.append((row[1].decode('utf-8')).replace('Paper','').replace('Tray 3 (LCT)','LCT'))
     Trays=[] #Will hold tray names and current/max paper levels
     tempTrayVarList={}
+    tempTrayPercentList={}
     tempMax=0 #Total paper capacity of current printer
     for trayIndex in range(len(trayNames)):
         currLevel=get(printers[i]['IP'], 'public', TrayCurrCap_baseOID+'.'+str(trayIndex+1))
         maxLevel=get(printers[i]['IP'], 'public', TrayMaxCap_baseOID+'.'+str(trayIndex+1))
         newTray=tk.StringVar()
+        newTrayPercent=tk.StringVar()
         newTray.set(currLevel)
+        newTrayPercent.set(int((currLevel/maxLevel)*100))
         tempTrayVarList[trayNames[trayIndex]]=newTray
+        tempTrayPercentList[trayNames[trayIndex]]=newTrayPercent
         Trays.append({trayNames[trayIndex]:{'maxLevel':maxLevel,'currLevel':currLevel}})
         tempMax+=maxLevel
     currTrayVarsList.append(tempTrayVarList)
+    trayFillPercent.append(tempTrayPercentList)
     totalMax+=tempMax
     printers[i]['Trays']=Trays
     
@@ -208,8 +214,9 @@ for i,item in enumerate(printers):
         Bar=ttk.Progressbar(Frame, variable=inkVarsList[i][ink], style=styles[counter])
         Bar.pack(side=tk.LEFT)
         
-        Label=tk.Label(Frame, textvariable=inkVarsList[i][ink], bd=0, width=3)
-        percent=tk.Label(Frame, text='%', bd=0)
+        Label=tk.Label(Frame, textvariable=inkVarsList[i][ink], bd=0, width=3, anchor='e',
+                       foreground='red' if int(inkVarsList[i][ink].get())<=20 else 'black')
+        percent=tk.Label(Frame, text='%', bd=0, foreground='red' if int(inkVarsList[i][ink].get())<=20 else 'black')
         percent.pack(side=tk.RIGHT)
         Label.pack(side=tk.RIGHT)
         
@@ -224,15 +231,35 @@ for i,item in enumerate(printers):
             continue
         Frame=tk.Frame(trayFrame)
 
-        trayName=tk.Label(Frame, text=list(printers[i]['Trays'][u].keys())[0]+':', anchor='w', width=9)
+        trayName=tk.Label(Frame, text=list(printers[i]['Trays'][u].keys())[0]+':', anchor='w', width=6, padx=4)
         trayName.pack(side=tk.LEFT)
+
+        trayLabel=tk.Frame(Frame, height=20, width=110)
+        trayLabel.pack_propagate(0)
+
+        percentFrame=tk.Frame(trayLabel, width=0)
+        trayPercent=tk.Label(percentFrame, textvariable=trayFillPercent[i][tray], bd=0,
+                             foreground='red' if int(trayFillPercent[i][tray].get())<=20 else 'black')
+        percentLabel=tk.Label(percentFrame, text='% ', bd=0,
+                             foreground='red' if int(trayFillPercent[i][tray].get())<=20 else 'black')
+        percentLabel.pack(side=tk.RIGHT)
+        trayPercent.pack(side=tk.LEFT)
+        percentFrame.pack(side=tk.LEFT)
         
-        trayCurrLevel=tk.Label(Frame, textvariable=currTrayVarsList[i][tray], width=5, anchor='e')
-        trayMaxLevel=tk.Label(Frame, text=str(printers[i]['Trays'][u][tray]['maxLevel']), width=3, anchor='e')
-        slash=tk.Label(Frame, text='/', anchor='e')
+        openParen=tk.Label(trayLabel, text='(')
+        trayCurrLevel=tk.Label(trayLabel, textvariable=currTrayVarsList[i][tray], anchor='e', bd=0)
+        slash=tk.Label(trayLabel, text='/', anchor='e', bd=0)
+        trayMaxLevel=tk.Label(trayLabel, text=str(printers[i]['Trays'][u][tray]['maxLevel']), anchor='e', bd=0)
+        closeParen=tk.Label(trayLabel, text=')', bd=0)
+
+        closeParen.pack(side=tk.RIGHT)
         trayMaxLevel.pack(side=tk.RIGHT)
         slash.pack(side=tk.RIGHT)
         trayCurrLevel.pack(side=tk.RIGHT)
+        openParen.pack(side=tk.RIGHT)
+
+        
+        trayLabel.pack(fill=tk.BOTH, expand=True)
         
         Frame.pack()
     trayFrame.grid(row=7, column=i, pady=20)
@@ -249,11 +276,17 @@ def getDeficit():
     
 getDeficit()
 
+def myDivide(currentTray, maxTray):
+    for i,item in enumerate(currentTray):
+        item.set(int((int(item.get())/maxTray[i])*100))
+    return currentTray
+
 def masterReload():
     for masterReloadIndex in range(len(printers)):
-        mySet(alertVarsList, myWalk(printers[masterReloadIndex]['IP'], Err_baseOID),masterReloadIndex )
-        mySet(inkVarsList, myWalk(printers[masterReloadIndex]['IP'], InkLevels_baseOID),masterReloadIndex )
-        mySet(currTrayVarsList, myWalk(printers[masterReloadIndex]['IP'], TrayCurrCap_baseOID),masterReloadIndex )
+        mySet(alertVarsList, myWalk(printers[masterReloadIndex]['IP'],Err_baseOID), masterReloadIndex )
+        mySet(inkVarsList, myWalk(printers[masterReloadIndex]['IP'],InkLevels_baseOID), masterReloadIndex )
+        mySet(currTrayVarsList, myWalk(printers[masterReloadIndex]['IP'],TrayCurrCap_baseOID), masterReloadIndex )
+        mySet(trayFillPercent, myDivide(myWalk(printers[masterReloadIndex]['IP'],TrayCurrCap_baseOID),[list(item.values())[0]['maxLevel'] for item in printers[masterReloadIndex]['Trays']]), masterReloadIndex )
         getDeficit()
 
 infoFrame = tk.Frame(root)
