@@ -1,7 +1,7 @@
 # Ricoh-Resource-Monitor
 Small program that monitors ink and paper tray levels at work. I didn't want to manually check every individual printer, so this program checks them all at once.
 
-<img src="https://i.imgur.com/DgapWT6.png" alt="Ricoh Resource Monitor screenshot">
+<img src="https://i.imgur.com/zL5D5ZF.png" alt="Ricoh Resource Monitor screenshot">
 
 <table>
 <tr><td><ul>
@@ -31,6 +31,7 @@ All of the printers are networked with publicly available SNMP values. This prog
   <li><del>Red text when values fall below a certain threshold</del></li>
   <li><del>Tray percentages</del></li>
   <li><del>Move images to dedicated images folder</del></li>
-  <li>Auto refresh option</li>
-  <li>Clean up code</li>
+  <li><del>Auto refresh option</del></li>
+  <li>Avoid having alerts push down printer frame</li>
+  <li>Clean up code...a lot</li>
 </ul>
