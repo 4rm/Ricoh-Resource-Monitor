@@ -1,5 +1,5 @@
 # Ricoh-Resource-Monitor
-Small program that monitors ink and paper tray levels at work. I didn't want to manually check every individual printer, so this program checks them all at once.
+GUI to monitor ink and paper tray levels at work. All printers are checked at once to avoid manually checking each one.
 
 <img src="https://i.imgur.com/zL5D5ZF.png" alt="Ricoh Resource Monitor screenshot">
 
