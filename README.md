@@ -1,7 +1,7 @@
 # Ricoh-Resource-Monitor
 GUI to monitor ink and paper tray levels at work. All printers are checked at once to avoid manually checking each one.
 
-<img src="https://i.imgur.com/zL5D5ZF.png" alt="Ricoh Resource Monitor screenshot">
+<img src="https://i.imgur.com/gnVRCim.png" alt="Ricoh Resource Monitor screenshot">
 
 <table>
 <tr><td><ul>
@@ -32,6 +32,6 @@ All of the printers are networked with publicly available SNMP values. This prog
   <li><del>Tray percentages</del></li>
   <li><del>Move images to dedicated images folder</del></li>
   <li><del>Auto refresh option</del></li>
-  <li>Avoid having alerts push down printer frame</li>
-  <li>Clean up code...a lot</li>
+  <li><del>Avoid having alerts push down printer frame<del></li>
+  <li>Clean up code, add comments, rename poorly named variables</li>
 </ul>
