@@ -1,7 +1,7 @@
 # Ricoh-Resource-Monitor
 GUI to monitor ink and paper tray levels at work. All printers are checked at once to avoid manually checking each one.
 
-<img src="https://i.imgur.com/4li8Rz5.png" alt="Ricoh Resource Monitor screenshot">
+<img src="https://i.imgur.com/5f62US6.png" alt="Ricoh Resource Monitor screenshot">
 
 <table>
 <tr><td><ul>
