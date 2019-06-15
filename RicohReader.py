@@ -11,10 +11,8 @@ class MainApplication(tk.Frame):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         def resource_path(relative_path):
-            """
-            Get absolute path to resource, works for dev and for
-            PyInstaller. Found on stackoverflow
-            """
+            #Get absolute path to resource, works for dev and for
+            #PyInstaller. Found on stackoverflow
             try:
                 base_path = sys._MEIPASS
             except Exception:
@@ -66,7 +64,9 @@ class MainApplication(tk.Frame):
         self.style.configure('yellow.Horizontal.TProgressbar',
                          background='yellow')
 
-        #Create list with different progress bar styles, for easy reference
+        #Create list with different progress bar styles for easy reference
+        #Second item is None because there are actually 5 ink results, with the
+        #second being waste toner
         self.styles=['black.Horizontal.TProgressbar',
                      None,
                     'cyan.Horizontal.TProgressbar',
@@ -136,17 +136,19 @@ class SelectionPane(tk.Frame):
         self.deficit_label.pack(side=tk.LEFT)
         self.total_deficit=tk.Label(self.deficit_frame,
                                    textvariable=parent.deficit)
-        self.total_deficit.pack()
-        self.deficit_frame.pack(anchor=tk.W, pady=(10,0))
+        self.total_deficit.pack(side=tk.RIGHT)
+        self.deficit_frame.pack(anchor=tk.W, pady=(10,0), fill=tk.BOTH)
 
         #Create frame for suggested ream count
         self.ream_frame=tk.Frame(self)
-        self.ream_label=tk.Label(self.ream_frame, text="Suggested reams: ",
+        self.ream_label=tk.Label(self.ream_frame,
+                                 text="Suggested reams: ",
                                  font=(None, 9, 'italic'))
         self.ream_label.pack(side=tk.LEFT)
-        self.ream_count=tk.Label(self.ream_frame, textvariable=parent.reams)
-        self.ream_count.pack()
-        self.ream_frame.pack(anchor=tk.W)
+        self.ream_count=tk.Label(self.ream_frame,
+                                 textvariable=parent.reams)
+        self.ream_count.pack(side=tk.RIGHT)
+        self.ream_frame.pack(anchor=tk.W, fill=tk.BOTH)
 
         #Create frame for variable refresh options/prompt
         self.reload_frame=tk.Frame(self)
@@ -279,6 +281,7 @@ class PrinterFrame(tk.Frame):
                            font=(None, 8, 'underline'), cursor="hand2")
         printer_IP.bind("<Button-1>",
                         lambda event,aurl=url:webbrowser.open(aurl))
+        #Bind event property to label to create a hyperlink
         printer_IP.pack()
 
         alert_frame=tk.Frame(self)
@@ -292,38 +295,48 @@ class PrinterFrame(tk.Frame):
         alerts_list.pack(side=tk.LEFT, pady=(5,0))
         alerts=walk(printer['IP'], 'public', parent.parent.error_base_OID)
         alert_length=0
+        #alerts is returned as an interator, so we define a counter to track
+        #its size
         for item in alerts:
             alerts_list.insert(tk.END, item[1].decode('utf-8'))
             alert_length+=1
         if alert_length>3:
+            #Only pack the scrollbar if there are 3 or more messages
+            #The scrollbar must be at least 3 lines long, so this is the
+            #smallest possible size
             scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
             alerts_list.config(yscrollcommand=scrollbar.set)
             scrollbar.config(command=alerts_list.yview)
-            
-        model=printer_model.cget("text").decode('utf-8')
+
+        #Start finding the correct picture to match the model    
+        model=printer_model.cget('text').decode('utf-8')
+        printer_image=None
         if model == 'MP C6004ex':
             printer_image=parent.parent.c6004ex
         elif model == 'MP C3504ex':
             printer_image=parent.parent.c3504ex
         elif model == 'MP C6503':
-            LCT=0
-            for item in walk(printer['IP'], 'public',
-                             parent.parent.tray_names_base_OID):
+            #The C6503 may or may not have an LCT
+            for item in walk(printer['IP'],
+                             'public',
+                             parent.parent.tray_names_base_OID
+                             ):
+                #Check if the tray names contain 'LCT'
                 if 'LCT' in item[1].decode('utf-8'):
-                    LCT+=1
-                else:
-                    LCT+=0
-            if LCT !=0:
-                printer_image=parent.parent.c6503f
-            else:
+                    printer_image=parent.parent.c6503f
+                    break
+            if printer_image is None:
+                #If the image still has not been set, it must be non-LCT C6503
                 printer_image=parent.parent.c6503
 
+        #Now that we know where the image should point to, create image object
         printer_image_canvas=tk.Canvas(self, width=135, height=140)
         printer_image_canvas.pack()
         printer_image_canvas.create_image(135,140,image=printer_image,
                                           anchor='se')
         printer_image_canvas.image=printer_image
 
+        #Start drawing ink bars
         ink_frame=tk.Frame(self)
         ink_frame.pack()
         for i, item in enumerate(walk(printer['IP'], 'public',
@@ -336,32 +349,43 @@ class PrinterFrame(tk.Frame):
             ink_bar=ttk.Progressbar(inner_ink_frame, value=item[1],
                                    style=parent.parent.styles[i])
             ink_level=tk.Label(inner_ink_frame, text="   "+str(item[1])+"%",
-                              foreground='red' if item[1]<=20 else 'black',
+                               foreground='red' if item[1]<=20 else 'black',
                                bd=0)
             ink_bar.pack(side=tk.LEFT, pady=0)
             ink_level.pack(side=tk.RIGHT, pady=0)
-            
+
+        #Start grabbing tray info
         tray_names=[]
         tray_current_level=[]
         tray_max_level=[]
-        tray_frame=tk.Frame(self)
-        tray_frame.pack(pady=(10,5))
-        for item in walk(printer['IP'], 'public',
-                         parent.parent.tray_names_base_OID):
+        for item in walk(printer['IP'],
+                         'public',
+                         parent.parent.tray_names_base_OID
+                         ):
             tray_names.append(item[1].decode('utf-8').replace('Paper','').replace('Tray 3 (LCT)','LCT'))
-        for item in walk(printer['IP'], 'public',
-                         parent.parent.tray_current_capacity_base_OID):
+        for item in walk(printer['IP'],
+                         'public',
+                         parent.parent.tray_current_capacity_base_OID
+                         ):
             tray_current_level.append(item[1])
-        for item in walk(printer['IP'], 'public',
-                         parent.parent.tray_max_capacity_base_OID):
+        for item in walk(printer['IP'],
+                         'public',
+                         parent.parent.tray_max_capacity_base_OID
+                         ):
             tray_max_level.append(item[1])
 
+        tray_frame=tk.Frame(self)
+        tray_frame.pack(pady=(10,5))
+        #Start counting info now, now that we can ignore the Bypass Tray
         self.printer_deficit=0
+        self.max_capacity=0
         for i, item in enumerate(tray_names):
             if item=='Bypass Tray':
                 continue
+            self.max_capacity+=tray_max_level[i]
             self.printer_deficit+=tray_max_level[i]-tray_current_level[i]
             tray_line=tk.Frame(tray_frame, height=20, width=170)
+            #Set propogate to 0 so we can manually define frame size
             tray_line.pack_propagate(0)
 
             tray_info=tk.Frame(tray_line, height=20, width=120)
@@ -373,28 +397,53 @@ class PrinterFrame(tk.Frame):
             tray_label.pack(side=tk.LEFT, anchor=tk.W)
             percent=int((tray_current_level[i]/tray_max_level[i])*100)
             tray_percent=tk.Label(tray_info, text=str(percent)+'%',
-                                 foreground='red' if percent<=20 else 'black')
+                                  foreground='red' if percent<=50 else 'black',
+                                  anchor=tk.E, width=5)
             tray_current_value=tk.Label(tray_info,
                                         text='('+str(tray_current_level[i]))
             tray_max_value=tk.Label(tray_info, text=str(tray_max_level[i])+')',
                                     anchor=tk.E)
             slash=tk.Label(tray_info, text='/', bd=0)
 
-            tray_percent.pack(side=tk.LEFT, anchor=tk.W)
+            tray_percent.pack(side=tk.LEFT)
             tray_max_value.pack(side=tk.RIGHT)
             slash.pack(side=tk.RIGHT)
             tray_current_value.pack(side=tk.RIGHT)
             
             tray_line.pack(anchor=tk.W, fill=tk.BOTH, expand=True)
 
-        parent.parent.deficit.set(parent.parent.deficit.get()+self.printer_deficit)
+        #Update the master record of loaded printer deficits/reams needed
+        parent.parent.deficit.set(
+            parent.parent.deficit.get()+self.printer_deficit
+            )
         parent.parent.reams.set(parent.parent.deficit.get()/500)
+
+        #Start drawing the paper fill bar
+        self.paper_percentage=int(
+            ((self.max_capacity-self.printer_deficit)/self.max_capacity)*100
+            )
+        bar_width=165
+        paper_level_canvas=tk.Canvas(self, width=bar_width, height=20)
+        paper_level_canvas.pack(side=tk.BOTTOM)
+        paper_level_canvas.create_rectangle(2, 2, bar_width-1, 14,
+                                            fill="gainsboro", outline="#757575")
+        tray_fill_bar_width=int((self.paper_percentage*bar_width)/100)-1
+        #Subtract 1 to avoid edge-to-edge overlap
+        paper_level_canvas.create_rectangle(3, 3, tray_fill_bar_width, 14,
+                                            fill='darkgray',
+                                            width=0
+                                            )
+        paper_level_canvas.create_text(80,8, font=(None, 8),
+                                       text='Paper fill: ' +
+                                       str(self.paper_percentage)+'%'
+                                       )
     def deficit(self):
+        #Return the printer's paper deficit to subtract when despawning frame
         return self.printer_deficit
-            
             
 if __name__ == "__main__":
     root=tk.Tk()
+    #Set resizable to False in X,Y. Trust the program to resize itself :)
     root.resizable(False, False)
     MainApplication(root).pack(side="top", fill="both", expand=True)
     root.mainloop()
