@@ -25,6 +25,8 @@ GUI to monitor ink and paper tray levels at work. All printers are checked at on
 
 All of the printers are networked with publicly available SNMP values. This program grabs the values and displays them in a nice TkInter window.
 
+Made with the help of takaakiaoki's frozen [Pmw.py module](https://github.com/takaakiaoki/bundlepmw), which was needed to create the standalone .exe with pyinstaller.
+
 ## <a name="future">Future improvements</a>
 <ul>
   <li><del>Clean up presentation/alignment</del></li>
