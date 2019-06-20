@@ -1,4 +1,5 @@
 import os
+import Pmw
 import time
 import datetime
 import webbrowser
@@ -21,17 +22,28 @@ class MainApplication(tk.Frame):
 
         #Define printer names and IP address
         self.printers=[
-                  {'IP':'172.18.181.227','Name':'CI-121'},
-                  {'IP':'172.18.166.19','Name':'CI-202L'},
-                  {'IP':'172.18.166.92','Name':'CI-202R'},
-                  {'IP':'172.18.181.232','Name':'CI-214'},
-                  {'IP':'172.18.181.244','Name':'CI-301'},
-                  {'IP':'172.18.181.231','Name':'CI-335'},
-                  {'IP':'172.18.181.230','Name':'CI-DO'},
-                  {'IP':'172.18.178.120','Name':'SDW-FL2'},
-                  {'IP':'172.18.177.204','Name':'ANX-A'},
-                  {'IP':'172.19.55.10','Name':'ANX-B'},
-                  {'IP':'172.18.186.18','Name':'RH-204'},
+                  {'IP':'172.18.181.227','Name':'CI-121',
+                   'Serial':'C068C400217','EID':'14072973'},
+                  {'IP':'172.18.166.19','Name':'CI-202L',
+                   'Serial':'C068C400212','EID':'14072975'},
+                  {'IP':'172.18.166.92','Name':'CI-202R',
+                   'Serial':'C068C300002','EID':'14072974'},
+                  {'IP':'172.18.181.232','Name':'CI-214',
+                   'Serial':'C758M520307','EID':'14072971'},
+                  {'IP':'172.18.181.244','Name':'CI-301',
+                   'Serial':'C728M810465','EID':'14143593'},
+                  {'IP':'172.18.181.231','Name':'CI-335',
+                   'Serial':'C068C400148','EID':'14072972'},
+                  {'IP':'172.18.181.230','Name':'CI-DO',
+                   'Serial':'C758M520011','EID':'14072970'},
+                  {'IP':'172.18.178.120','Name':'SDW-FL2',
+                   'Serial':'C758M520012','EID':'14072977'},
+                  {'IP':'172.18.177.204','Name':'ANX-A',
+                   'Serial':'C068C400209','EID':'14072979'},
+                  {'IP':'172.19.55.10','Name':'ANX-B',
+                   'Serial':'C068C400222','EID':'14072976'},
+                  {'IP':'172.18.186.18','Name':'RH-204',
+                   'Serial':'C727M810074','EID':'14381339'},
         ]
 
         #Define OIDs for Ricoh brand printers
@@ -93,6 +105,20 @@ class MainApplication(tk.Frame):
         self.selection_pane.pack(side="left", fill="y", expand=True,
                                  padx=5, pady=5)
 
+        #Create the hover label in the bottom right
+        self.q=tk.Label(self.item_frame, text="?", bd=0,
+                        font=(None, 6), cursor="hand2")
+        self.q.pack(side=tk.RIGHT, anchor=tk.S)
+        self.balloon = Pmw.Balloon(parent)
+        self.balloon.bind(self.q, 'RRM v3.3\n'
+                          'Emilio Garcia\n'
+                          'SC&I IT Helpdesk')
+        self.q.bind("<Button-1>",
+                    lambda event: webbrowser.open(
+                        'https://github.com/4rm/Ricoh-Resource-Monitor/releases'
+                        )
+                    )
+
 class SelectionPane(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs,
@@ -105,9 +131,11 @@ class SelectionPane(tk.Frame):
         #Create frame to hold 'all' and 'none' buttons
         self.option_buttons=tk.Frame(self)
         self.none_check=tk.Checkbutton(self.option_buttons, text="None",
-                                      command=lambda:self.none())
+                                      command=lambda:self.none(),
+                                       cursor="hand2")
         self.all_check=tk.Checkbutton(self.option_buttons, text="All",
-                                     command=lambda:self.all())
+                                     command=lambda:self.all(),
+                                      cursor="hand2")
         self.none_check.pack(side=tk.RIGHT)
         self.all_check.pack(side=tk.LEFT)
         
@@ -116,7 +144,8 @@ class SelectionPane(tk.Frame):
             var=tk.IntVar()
             self.check=tk.Checkbutton(self, text=entry['Name'], variable=var,
                                  command=lambda var=var,entry=entry:
-                                      self.spawn_despawn(var.get(), entry))
+                                      self.spawn_despawn(var.get(), entry),
+                                 cursor="hand2")
             self.checklist.append([self.check, var])
             self.check.pack(anchor=tk.W)
             #If the printer is one that we refill on our paper route, autoload
@@ -162,11 +191,11 @@ class SelectionPane(tk.Frame):
         self.reload_time.insert(tk.END, 600)
         self.stop_button=tk.Button(self.reload_frame_2, text="Stop",
                                    command=lambda:self.reset_timer(),
-                                   width=9)
+                                   width=9, cursor="hand2")
         self.stop_button.pack(side=tk.RIGHT)
         self.refresh_button=tk.Button(self.reload_frame_2, text="Set",
                                       command=lambda:self.set_timeInput(),
-                                      width=9)
+                                      width=9, cursor="hand2")
         self.refresh_button.pack(side=tk.LEFT)
         self.reload_frame_2.pack(side=tk.BOTTOM, anchor=tk.E, fill=tk.X)
         self.reload_frame.pack(side=tk.BOTTOM, anchor=tk.W, pady=(10,5))
@@ -259,7 +288,7 @@ class ItemFrame(tk.Frame):
 
 class PrinterFrame(tk.Frame):
     def __init__(self, parent, printer):
-        tk.Frame.__init__(self, parent, name="a"+printer['Name'], padx=10)
+        tk.Frame.__init__(self, parent, name="a"+printer['Name'], padx=5)
         #initialize frame with name of printer (preface with 'a' because name
         #can't start with a capital letter
         
@@ -269,16 +298,21 @@ class PrinterFrame(tk.Frame):
         self.parent = parent
         self.IP=printer['IP']
         
+        balloon = Pmw.Balloon(parent)
+        
         printer_name=tk.Label(self, text=printer['Name'], font=(None, 14))
+        balloon.bind(printer_name, 'Serial: ' + printer['Serial'] +
+                     '\nEID: ' +printer['EID'])
         printer_name.pack()
 
         printer_model=tk.Label(self, text=get(printer['IP'], 'public',
                                              parent.parent.model_OID))
         printer_model.pack()
 
-        url='http://' + printer['IP'] + '/web/guest/en/websys/webArch/getStatus.cgi'
+        url='http://' + printer['IP'] + '/web/guest/en/websys/webArch/mainFrame.cgi'
         printer_IP=tk.Label(self, text=printer['IP'], fg="blue",
                            font=(None, 8, 'underline'), cursor="hand2")
+        balloon.bind(printer_IP, 'Go to printer control panel')
         printer_IP.bind("<Button-1>",
                         lambda event,aurl=url:webbrowser.open(aurl))
         #Bind event property to label to create a hyperlink
@@ -437,6 +471,9 @@ class PrinterFrame(tk.Frame):
                                        text='Paper fill: ' +
                                        str(self.paper_percentage)+'%'
                                        )
+        balloon.bind(paper_level_canvas, '-' + str(self.printer_deficit)
+                     + ' pages' + ' | -' +
+                     str(self.printer_deficit/500) + ' reams')
     def deficit(self):
         #Return the printer's paper deficit to subtract when despawning frame
         return self.printer_deficit
