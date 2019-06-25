@@ -15,7 +15,7 @@ class MainApplication(tk.Frame):
         self.parent = parent
         def resource_path(relative_path):
             #Get absolute path to resource, works for dev and for
-            #PyInstaller. Found on stackoverflow
+            #PyInstaller - Found on stackoverflow
             try:
                 base_path = sys._MEIPASS
             except Exception:
