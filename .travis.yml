@@ -4,5 +4,3 @@ python:
   - "3.6"
   - "3.7"
   - "nightly"
-install: "pip install ."
-script: "py.test -c pytest-travis.ini"
