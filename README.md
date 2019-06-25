@@ -1,5 +1,5 @@
 # Ricoh-Resource-Monitor
-GUI to monitor ink and paper tray levels at work. All printers are checked at once to avoid manually checking each one.
+GUI to monitor ink and paper tray levels at work. Values are gathered using SNMP and displayed using TkInter.
 
 <img src="https://i.imgur.com/reFqhNs.png" alt="Ricoh Resource Monitor screenshot">
 
@@ -19,13 +19,17 @@ GUI to monitor ink and paper tray levels at work. All printers are checked at on
   <td><a href="https://github.com/exhuma/puresnmp">puresnmp</a> (1.4.2rc1) </td>
     <td>Python SNMPv2 Library </td>
   </tr>
+  <tr>
+  <td><a href="https://github.com/takaakiaoki/bundlepmw">takaakiaoki's bundlepmw</a></td>
+    <td>Modernized Pmw bundle</td>
+  </tr>
 </table>
 
 ## <a name="How">How it works</a>
 
-All of the printers are networked with publicly available SNMP values. This program grabs the values and displays them in a nice TkInter window.
+All of the printers are networked with publicly available SNMP values. As long as the host machine is on the same network, this program grabs the values using generic OIDs and displays them in a nice TkInter window.
 
-Made with the help of takaakiaoki's frozen [Pmw.py module](https://github.com/takaakiaoki/bundlepmw), which was needed to create the standalone .exe with pyinstaller.
+Executable made with the help of takaakiaoki's frozen [Pmw.py module](https://github.com/takaakiaoki/bundlepmw), which was needed to create the standalone .exe with pyinstaller.
 
 ## <a name="future">Future improvements</a>
 <ul>
