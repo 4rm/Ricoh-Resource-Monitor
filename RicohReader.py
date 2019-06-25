@@ -91,7 +91,7 @@ class MainApplication(tk.Frame):
 
         #Define window properties
         root.title('Ricoh Resource Monitor v3.4')
-        root.iconbitmap(resource_path('images/icon.ico'))
+        #root.iconbitmap(resource_path('images/icon.ico'))
 
         #Grab the current time for logfile creation
         self.current_time=datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
