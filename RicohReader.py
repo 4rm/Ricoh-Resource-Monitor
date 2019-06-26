@@ -83,14 +83,14 @@ class MainApplication(tk.Frame):
         #Create list with different progress bar styles for easy reference
         #Second item is None because there are actually 5 ink results, with the
         #second being waste toner
-        self.styles=['black.Horizontal.TProgressbar',
-                     None,
-                    'cyan.Horizontal.TProgressbar',
-                    'magenta.Horizontal.TProgressbar',
-                    'yellow.Horizontal.TProgressbar',]
+        self.styles=[('black.Horizontal.TProgressbar','Black'),
+                     (None,None),
+                     ('cyan.Horizontal.TProgressbar','Cyan'),
+                     ('magenta.Horizontal.TProgressbar','Magenta'),
+                     ('yellow.Horizontal.TProgressbar','Yellow')]
 
         #Define window properties
-        root.title('Ricoh Resource Monitor v3.4')
+        root.title('Ricoh Resource Monitor v3.4.1')
         root.iconbitmap(resource_path('images/icon.ico'))
 
         #Grab the current time for logfile creation
@@ -117,7 +117,7 @@ class MainApplication(tk.Frame):
                         font=(None, 6), cursor="hand2")
         self.q.pack(side=tk.RIGHT, anchor=tk.S)
         self.balloon = Pmw.Balloon(parent)
-        self.balloon.bind(self.q, 'RRM v3.4\n'
+        self.balloon.bind(self.q, 'RRM v3.4.1\n'
                           'Emilio Garcia\n'
                           'SC&I IT Helpdesk')
         self.q.bind("<Button-1>",
@@ -396,12 +396,13 @@ class PrinterFrame(tk.Frame):
                 inner_ink_frame=tk.Frame(ink_frame)
                 inner_ink_frame.pack(pady=0)
                 ink_bar=ttk.Progressbar(inner_ink_frame, value=item[1],
-                                       style=parent.parent.styles[i])
+                                       style=parent.parent.styles[i][0])
                 ink_level=tk.Label(inner_ink_frame, text="   "+str(item[1])+"%",
                                    foreground='red' if item[1]<=20 else 'black',
                                    bd=0)
                 ink_bar.pack(side=tk.LEFT, pady=0)
                 ink_level.pack(side=tk.RIGHT, pady=0)
+                balloon.bind(ink_bar, parent.parent.styles[i][1])
 
             #Start grabbing tray info
             tray_names=[]
