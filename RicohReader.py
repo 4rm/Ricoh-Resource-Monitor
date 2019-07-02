@@ -399,7 +399,7 @@ class PrinterFrame(tk.Frame):
                                        style=parent.parent.styles[i][0])
                 ink_level=tk.Label(inner_ink_frame, text="   "+str(item[1])+"%",
                                    foreground='red' if item[1]<=20 else 'black',
-                                   bd=0)
+                                   bd=0, width=5)
                 ink_bar.pack(side=tk.LEFT, pady=0)
                 ink_level.pack(side=tk.RIGHT, pady=0)
                 balloon.bind(ink_bar, parent.parent.styles[i][1])
