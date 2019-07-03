@@ -1,12 +1,10 @@
-import os
-import Pmw
-import time
 import os.path
-import datetime
 import traceback
 import webbrowser
 import tkinter as tk
 from tkinter import ttk
+from Pmw import Balloon
+from datetime import datetime
 from puresnmp import walk, get
 
 class MainApplication(tk.Frame):
@@ -90,11 +88,11 @@ class MainApplication(tk.Frame):
                      ('yellow.Horizontal.TProgressbar','Yellow')]
 
         #Define window properties
-        root.title('Ricoh Resource Monitor v3.4.1')
+        root.title('Ricoh Resource Monitor v3.4.2')
         root.iconbitmap(resource_path('images/icon.ico'))
 
         #Grab the current time for logfile creation
-        self.current_time=datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')
+        self.current_time=datetime.now().strftime('%Y-%m-%d_%H-%M')
 
         #Create variables to hold current paper deficit
         self.deficit=tk.IntVar()
@@ -116,8 +114,8 @@ class MainApplication(tk.Frame):
         self.q=tk.Label(self.item_frame, text="?", bd=0,
                         font=(None, 6), cursor="hand2")
         self.q.pack(side=tk.RIGHT, anchor=tk.S)
-        self.balloon = Pmw.Balloon(parent)
-        self.balloon.bind(self.q, 'RRM v3.4.1\n'
+        self.balloon = Balloon(parent)
+        self.balloon.bind(self.q, 'RRM v3.4.2\n'
                           'Emilio Garcia\n'
                           'SC&I IT Helpdesk')
         self.q.bind("<Button-1>",
@@ -312,7 +310,7 @@ class PrinterFrame(tk.Frame):
         self.parent = parent
         self.IP=printer['IP']
         
-        balloon = Pmw.Balloon(parent)
+        balloon = Balloon(parent)
         
         printer_name=tk.Label(self, text=printer['Name'], font=(None, 14))
         balloon.bind(printer_name, 'Serial: ' + printer['Serial'] +
@@ -506,7 +504,7 @@ class PrinterFrame(tk.Frame):
 
             #log error and stack trace to logfile
             log=open('RRM_log_' + parent.parent.current_time + '.txt','a')
-            log.write('(' + datetime.datetime.now().strftime('%H:%M') + ') ' +
+            log.write('(' + datetime.now().strftime('%H:%M') + ') ' +
                       printer['Name'] + ': ' + str(err) + '\n' +
                       traceback.format_exc() + '\n')
                 
