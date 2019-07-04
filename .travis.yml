@@ -5,6 +5,4 @@ python:
 dist: xenial
 services:
   - xvfb
-script: python RicohReader.py --cov-report term --cov=app/test/
-after_success:
-  - codecov
+script: python RicohReader.py
