@@ -1,2 +1,3 @@
 Pmw==2.0.1
 puresnmp==1.5.1
+codecov==2.0.15
