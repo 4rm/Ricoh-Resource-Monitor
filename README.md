@@ -1,4 +1,6 @@
 [![Build Status](https://travis-ci.org/4rm/Ricoh-Resource-Monitor.svg?branch=master)](https://travis-ci.org/4rm/Ricoh-Resource-Monitor)
+[![Github Release](https://img.shields.io/github/release/4rm/Ricoh-resource-monitor.svg?color=leaf)](https://github.com/4rm/Ricoh-Resource-Monitor/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 # Ricoh-Resource-Monitor
 
