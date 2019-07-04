@@ -89,7 +89,8 @@ class MainApplication(tk.Frame):
 
         #Define window properties
         root.title('Ricoh Resource Monitor v3.4.2')
-        root.iconbitmap(resource_path('images/icon.ico'))
+        if "nt" == os.name:
+            root.iconbitmap(resource_path('images/icon.ico'))
 
         #Grab the current time for logfile creation
         self.current_time=datetime.now().strftime('%Y-%m-%d_%H-%M')
@@ -517,4 +518,8 @@ if __name__ == "__main__":
     #Set resizable to False in X,Y. Trust the program to resize itself :)
     root.resizable(False, False)
     MainApplication(root).pack(side="top", fill="both", expand=True)
-    root.mainloop()
+    if 'TRAVIS' in os.environ:
+        root.update()
+        root.update_idletasks()
+    else:
+        root.mainloop()
