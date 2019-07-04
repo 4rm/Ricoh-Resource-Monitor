@@ -1,4 +1,7 @@
+[![Build Status](https://travis-ci.org/4rm/Ricoh-Resource-Monitor.svg?branch=master)](https://travis-ci.org/4rm/Ricoh-Resource-Monitor)
+
 # Ricoh-Resource-Monitor
+
 GUI to monitor ink and paper tray levels at work. Values are gathered using SNMP and displayed using TkInter.
 
 <img src="https://i.imgur.com/reFqhNs.png" alt="Ricoh Resource Monitor screenshot">
