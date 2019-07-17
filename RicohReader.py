@@ -475,11 +475,11 @@ class PrinterFrame(tk.Frame):
             paper_level_canvas=tk.Canvas(self, width=bar_width, height=20)
             paper_level_canvas.pack(side=tk.BOTTOM)
             paper_level_canvas.create_rectangle(2, 2, bar_width-1, 14,
-                                                fill="gainsboro", outline="#757575")
+                                                fill=default_bg, outline="#757575")
             tray_fill_bar_width=int((self.paper_percentage*bar_width)/100)-1
             #Subtract 1 to avoid edge-to-edge overlap
             paper_level_canvas.create_rectangle(3, 3, tray_fill_bar_width, 14,
-                                                fill='darkgray',
+                                                fill='#cbcbcb',
                                                 width=0
                                                 )
             paper_level_canvas.create_text(80,8, font=(None, 8),
