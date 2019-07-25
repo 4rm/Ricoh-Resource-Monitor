@@ -4,13 +4,14 @@
 
 GUI to monitor ink and paper tray levels at work. Values are gathered using SNMP and displayed using TkInter.
 
-<img src="https://i.imgur.com/YAHm6RZ.png" alt="Ricoh Resource Monitor screenshot">
+<img src="https://i.imgur.com/LORvnMB.png" alt="Ricoh Resource Monitor screenshot">
 
 <table>
 <tr><td><ul>
 <b><p align="center">Contents</p></b>
 <li><a href="#Tech">Technology used</a></li>
 <li><a href="#How">How it works</a></li>
+<li><a href="#Known">Known Issues</a></li>
 <li><a href="#Thanks">Thanks</a></li>
 <li><a href="Future">Future improvements</a></li>
 </ul></td></tr>
@@ -44,16 +45,11 @@ All of the printers are networked with publicly available SNMP values. As long a
 |Max Tray Fill|.1.3.6.1.2.1.43.8.2.1.9.1|Walk|
 |Printer Errors|.1.3.6.1.2.1.43.18.1.1.8.1|Walk|
 
-## <a name="Thanks">Thanks</a>
-Thanks to takaakiaoki's frozen [Pmw.py module](https://github.com/takaakiaoki/bundlepmw), which was needed to create the standalone .exe with pyinstaller.
+## <a name="Known">Known Issues</a>
 
-## <a name="Future">Future improvements</a>
-<ul>
-  <li><del>Clean up presentation/alignment</del></li>
-  <li><del>Red text when values fall below a certain threshold</del></li>
-  <li><del>Tray percentages</del></li>
-  <li><del>Move images to dedicated images folder</del></li>
-  <li><del>Auto refresh option</del></li>
-  <li><del>Avoid having alerts push down printer frame</del></li>
-  <li><del>Clean up code, add comments, rename poorly named variables</del></li>
-</ul>
+- Printers will not report changes in paper level unless they have been woken from Energy Saver Mode
+- Some trays are actually split into left- and right-hand compartments, but Ricoh reports their fill levels as one value
+- Log file may not be created in some locations unless RRM is launched as administrator
+
+## <a name="Thanks">Thanks</a>
+Thanks to takaakiaoki for their frozen [Pmw.py module](https://github.com/takaakiaoki/bundlepmw), which was needed to create the standalone .exe with pyinstaller.
