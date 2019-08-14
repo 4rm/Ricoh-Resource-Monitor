@@ -88,7 +88,7 @@ class MainApplication(tk.Frame):
                      ('yellow.Horizontal.TProgressbar','Yellow')]
 
         #Define window properties
-        root.title('Ricoh Resource Monitor v3.4.2')
+        root.title('Ricoh Resource Monitor v3.4.3')
         if "nt" == os.name:
             root.iconbitmap(resource_path('images/icon.ico'))
 
@@ -116,7 +116,7 @@ class MainApplication(tk.Frame):
                         font=(None, 6), cursor="hand2")
         self.q.pack(side=tk.RIGHT, anchor=tk.S)
         self.balloon = Balloon(parent)
-        self.balloon.bind(self.q, 'RRM v3.4.2\n'
+        self.balloon.bind(self.q, 'RRM v3.4.3\n'
                           'Emilio Garcia\n'
                           'SC&I IT Helpdesk')
         self.q.bind("<Button-1>",
@@ -431,9 +431,16 @@ class PrinterFrame(tk.Frame):
             for i, item in enumerate(tray_names):
                 if item=='Bypass Tray':
                     continue
+                tray_deficit=tray_max_level[i]-tray_current_level[i]
+                percent=int((tray_current_level[i]/tray_max_level[i])*100)
+                #Check if deficit is higher than 495 (at least one ream needed)
+                #495 used because small trays at 10% are reported as 55/550
+                label_color='red' if tray_deficit>=495 else 'black'
+                
                 self.max_capacity+=tray_max_level[i]
-                self.printer_deficit+=tray_max_level[i]-tray_current_level[i]
+                self.printer_deficit+=tray_deficit
                 tray_line=tk.Frame(tray_frame, height=20, width=170)
+                
                 #Set propogate to 0 so we can manually define frame size
                 tray_line.pack_propagate(0)
 
@@ -442,17 +449,21 @@ class PrinterFrame(tk.Frame):
                 tray_info.pack(side=tk.RIGHT)
                 
                 tray_label=tk.Label(tray_line, text=item + ": ",
-                                    font=(None, 9, 'bold'))
+                                    font=(None, 9, 'bold'),
+                                    foreground=label_color)
                 tray_label.pack(side=tk.LEFT, anchor=tk.W)
-                percent=int((tray_current_level[i]/tray_max_level[i])*100)
+            
                 tray_percent=tk.Label(tray_info, text=str(percent)+'%',
-                                      foreground='red' if percent<=50 else 'black',
+                                      foreground=label_color,
                                       anchor=tk.E, width=5)
                 tray_current_value=tk.Label(tray_info,
-                                            text='('+str(tray_current_level[i]))
-                tray_max_value=tk.Label(tray_info, text=str(tray_max_level[i])+')',
-                                        anchor=tk.E)
-                slash=tk.Label(tray_info, text='/', bd=0)
+                                            text='('+str(tray_current_level[i]),
+                                            foreground=label_color)
+                tray_max_value=tk.Label(tray_info,
+                                        text=str(tray_max_level[i])+')',
+                                        anchor=tk.E, foreground=label_color)
+                slash=tk.Label(tray_info, text='/', bd=0,
+                               foreground=label_color)
 
                 tray_percent.pack(side=tk.LEFT)
                 tray_max_value.pack(side=tk.RIGHT)
@@ -475,16 +486,19 @@ class PrinterFrame(tk.Frame):
             paper_level_canvas=tk.Canvas(self, width=bar_width, height=20)
             paper_level_canvas.pack(side=tk.BOTTOM)
             paper_level_canvas.create_rectangle(2, 2, bar_width-1, 14,
-                                                fill=default_bg, outline="#757575")
+                                                fill=default_bg,
+                                                outline='red' if self.paper_percentage<=50 else '#757575')
             tray_fill_bar_width=int((self.paper_percentage*bar_width)/100)-1
             #Subtract 1 to avoid edge-to-edge overlap
+            
             paper_level_canvas.create_rectangle(3, 3, tray_fill_bar_width, 14,
                                                 fill='#cbcbcb',
                                                 width=0
                                                 )
             paper_level_canvas.create_text(80,8, font=(None, 8),
                                            text='Paper fill: ' +
-                                           str(self.paper_percentage)+'%'
+                                           str(self.paper_percentage)+'%',
+                                           fill='red' if self.paper_percentage<=50 else 'black'
                                            )
             balloon.bind(paper_level_canvas, '-' + str(self.printer_deficit)
                          + ' pages' + ' | -' +
