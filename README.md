@@ -4,7 +4,7 @@
 
 GUI to monitor ink and paper tray levels at work. Values are gathered using SNMP and displayed using TkInter.
 
-<img src="https://i.imgur.com/LORvnMB.png" alt="Ricoh Resource Monitor screenshot">
+<img src="https://i.imgur.com/DFdmrZa.png" alt="Ricoh Resource Monitor screenshot">
 
 <table>
 <tr><td><ul>
