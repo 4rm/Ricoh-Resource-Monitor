@@ -13,7 +13,6 @@ GUI to monitor ink and paper tray levels at work. Values are gathered using SNMP
 <li><a href="#How">How it works</a></li>
 <li><a href="#Known">Known Issues</a></li>
 <li><a href="#Thanks">Thanks</a></li>
-<li><a href="Future">Future improvements</a></li>
 </ul></td></tr>
 </table>
 
