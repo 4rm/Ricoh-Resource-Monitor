@@ -44,6 +44,8 @@ class MainApplication(tk.Frame):
                    'Serial':'C068C400222','EID':'14072976'},
                   {'IP':'172.18.186.18','Name':'RH-204',
                    'Serial':'C727M810074','EID':'14381339'},
+                  {'IP':'172.18.162.240','Name':'AL-405',
+                   'Serial':'C91193826','EID':'14303534'}
         ]
 
         #Define OIDs for Ricoh brand printers
@@ -63,6 +65,8 @@ class MainApplication(tk.Frame):
             file=resource_path('images/c6503.png')).subsample(4, 4)
         self.c6503f = tk.PhotoImage(
             file=resource_path('images/c6503f.png')).subsample(4, 4)
+        self.c4500 = tk.PhotoImage(
+            file=resource_path('images/c4500.png')).subsample(4, 4)
         self.no_connection = tk.PhotoImage(
             file=resource_path('images/NoConnection.png')).subsample(4, 4)
 
@@ -88,7 +92,7 @@ class MainApplication(tk.Frame):
                      ('yellow.Horizontal.TProgressbar','Yellow')]
 
         #Define window properties
-        root.title('Ricoh Resource Monitor v3.4.3')
+        root.title('Ricoh Resource Monitor v3.5')
         if "nt" == os.name:
             root.iconbitmap(resource_path('images/icon.ico'))
 
@@ -116,7 +120,7 @@ class MainApplication(tk.Frame):
                         font=(None, 6), cursor="hand2")
         self.q.pack(side=tk.RIGHT, anchor=tk.S)
         self.balloon = Balloon(parent)
-        self.balloon.bind(self.q, 'RRM v3.4.3\n'
+        self.balloon.bind(self.q, 'RRM v3.5\n'
                           'Emilio Garcia\n'
                           'SC&I IT Helpdesk')
         self.q.bind("<Button-1>",
@@ -363,6 +367,8 @@ class PrinterFrame(tk.Frame):
                 printer_image=parent.parent.c6004ex
             elif model == 'MP C3504ex':
                 printer_image=parent.parent.c3504ex
+            elif model == 'IM C4500':
+                printer_image=parent.parent.c4500
             elif model == 'MP C6503':
                 #The C6503 may or may not have an LCT
                 for item in walk(printer['IP'],
@@ -490,6 +496,9 @@ class PrinterFrame(tk.Frame):
                                                 outline='red' if self.paper_percentage<=50 else '#757575')
             tray_fill_bar_width=int((self.paper_percentage*bar_width)/100)-1
             #Subtract 1 to avoid edge-to-edge overlap
+            if tray_fill_bar_width < 3:
+                tray_fill_bar_width=3
+                #Prevent drawing in the negative direction when fill<=1%
             
             paper_level_canvas.create_rectangle(3, 3, tray_fill_bar_width, 14,
                                                 fill='#cbcbcb',
@@ -505,6 +514,8 @@ class PrinterFrame(tk.Frame):
                          str(self.printer_deficit/500) + ' reams')
             
         except Exception as err:
+            log_name='RRM_log_' + parent.parent.current_time + '.txt'
+            
             #Display error image
             no_connection_canvas=tk.Canvas(self, width=155, height=150)
             no_connection_canvas.pack(pady=(100,0))
@@ -512,10 +523,27 @@ class PrinterFrame(tk.Frame):
                                               image=parent.parent.no_connection,
                                               anchor=tk.SE)
             no_connection_canvas.image=parent.parent.no_connection
-            no_connection_label=tk.Label(self, text="No connection!\n"
-                                         "Check the log file for more info",
-                                         foreground='red')
-            no_connection_label.pack()
+            no_connection_label_top=tk.Label(self, text="No Connection!",
+                                          foreground='red', bd=0)
+            no_connection_label_bottom=tk.Frame(self)
+            no_connection_label2=tk.Label(no_connection_label_bottom,
+                                          text="Check the ",
+                                          foreground='red', bd=0)
+            no_connection_label2.pack(side=tk.LEFT)
+            no_connection_label3=tk.Label(no_connection_label_bottom,
+                                         text="log file",
+                                         foreground='blue', cursor="hand2",
+                                         font=(None, 9, 'underline'),
+                                         bd=0)
+            no_connection_label3.bind("<Button-1>",
+                            lambda event:os.startfile(log_name))
+            no_connection_label3.pack(side=tk.LEFT)
+            no_connection_label4=tk.Label(no_connection_label_bottom,
+                                          text=" for more info",
+                                          foreground='red', bd=0)
+            no_connection_label4.pack(side=tk.RIGHT)
+            no_connection_label_top.pack()
+            no_connection_label_bottom.pack(anchor=tk.S)
 
             #log error and stack trace to logfile
             log=open('RRM_log_' + parent.parent.current_time + '.txt','a')
