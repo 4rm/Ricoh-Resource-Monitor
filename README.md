@@ -20,7 +20,7 @@ GUI to monitor ink and paper tray levels at work. Values are gathered using SNMP
 
 <table>
   <tr>
-  <td><a href="https://github.com/exhuma/puresnmp">puresnmp</a> (1.4.2rc1) </td>
+  <td><a href="https://github.com/exhuma/puresnmp">puresnmp</a> (1.5.1) </td>
     <td>Python SNMPv2 Library </td>
   </tr>
   <tr>
@@ -46,8 +46,8 @@ All of the printers are networked with publicly available SNMP values. As long a
 
 ## <a name="Known">Known Issues</a>
 
-- Printers will not report changes in paper level unless they have been woken from Energy Saver Mode
-- Some trays are actually split into left- and right-hand compartments, but Ricoh reports their fill levels as one value
+- Printers will not report paper level changes unless they've been woken from Energy Saver Mode
+- Some trays are split into left- and right-hand compartments, but Ricoh reports their fill levels as one value
 - Log file may not be created in some locations unless RRM is launched as administrator
 
 ## <a name="Thanks">Thanks</a>
