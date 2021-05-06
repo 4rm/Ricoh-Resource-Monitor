@@ -1,3 +1,4 @@
+import pickle
 import os.path
 import traceback
 import webbrowser
@@ -21,32 +22,42 @@ class MainApplication(tk.Frame):
             return os.path.join(base_path, relative_path)
 
         #Define printer names and IP address
-        self.printers=[
+        self.default_printers=[
                   {'IP':'172.18.181.227','Name':'CI-121',
-                   'Serial':'C068C400217','EID':'14072973'},
-                  {'IP':'172.18.166.19','Name':'CI-202L',
-                   'Serial':'C068C400212','EID':'14072975'},
-                  {'IP':'172.18.166.92','Name':'CI-202R',
-                   'Serial':'C068C300002','EID':'14072974'},
+                   'Serial':'C068C400217','EID':'14072973','Default': True},
+                  {'IP':'172.18.166.92','Name':'CI-202',
+                   'Serial':'C068C300002','EID':'14072974','Default': True},
                   {'IP':'172.18.181.232','Name':'CI-214',
-                   'Serial':'C758M520307','EID':'14072971'},
+                   'Serial':'C758M520307','EID':'14072971','Default': False},
                   {'IP':'172.18.181.244','Name':'CI-301',
-                   'Serial':'C728M810465','EID':'14143593'},
+                   'Serial':'C728M810465','EID':'14143593','Default': False},
                   {'IP':'172.18.181.231','Name':'CI-335',
-                   'Serial':'C068C400148','EID':'14072972'},
+                   'Serial':'C068C400148','EID':'14072972','Default': True},
                   {'IP':'172.18.181.230','Name':'CI-DO',
-                   'Serial':'C758M520011','EID':'14072970'},
+                   'Serial':'C758M520011','EID':'14072970','Default': False},
                   {'IP':'172.18.178.120','Name':'SDW-FL2',
-                   'Serial':'C758M520012','EID':'14072977'},
+                   'Serial':'C758M520012','EID':'14072977','Default': True},
                   {'IP':'172.18.177.204','Name':'ANX-A',
-                   'Serial':'C068C400209','EID':'14072979'},
+                   'Serial':'C068C400209','EID':'14072979','Default': True},
                   {'IP':'172.19.55.10','Name':'ANX-B',
-                   'Serial':'C068C400222','EID':'14072976'},
+                   'Serial':'C068C400222','EID':'14072976','Default': True},
                   {'IP':'172.18.186.18','Name':'RH-204',
-                   'Serial':'C727M810074','EID':'14381339'},
+                   'Serial':'C727M810074','EID':'14381339','Default': False},
                   {'IP':'172.18.162.240','Name':'AL-405',
-                   'Serial':'C91193826','EID':'14303534'}
+                   'Serial':'C91193826','EID':'14303534','Default': False}
         ]
+
+        try:
+            with open('Printers.pkl', 'rb') as f:
+                #Attempt loading from a local pickle file
+                #if it exists and is valid
+                self.printers = pickle.load(f)
+        except:
+            #If local pickle file is corrupt or does not exist
+            #create pickle file with default values
+            self.printers = self.default_printers
+            with open('Printers.pkl', 'wb') as f:
+                pickle.dump(self.printers, f)
 
         #Define OIDs for Ricoh brand printers
         self.model_OID = '.1.3.6.1.2.1.43.5.1.1.16.1'
@@ -69,6 +80,8 @@ class MainApplication(tk.Frame):
             file=resource_path('images/c4500.png')).subsample(4, 4)
         self.no_connection = tk.PhotoImage(
             file=resource_path('images/NoConnection.png')).subsample(4, 4)
+        self.missing_model = tk.PhotoImage(
+            file=resource_path('images/missing.png')).subsample(4, 4)
 
         #Create styles for progress bars
         self.style=ttk.Style()
@@ -92,8 +105,8 @@ class MainApplication(tk.Frame):
                      ('yellow.Horizontal.TProgressbar','Yellow')]
 
         #Define window properties
-        root.title('Ricoh Resource Monitor v3.5')
-        if "nt" == os.name:
+        root.title('Ricoh Resource Monitor v3.6')
+        if 'nt' == os.name:
             root.iconbitmap(resource_path('images/icon.ico'))
 
         #Grab the current time for logfile creation
@@ -108,26 +121,19 @@ class MainApplication(tk.Frame):
 
         #Create frame that will hold the printers
         self.item_frame=ItemFrame(self)
-        self.item_frame.pack(side="right", fill="y")
+        self.item_frame.pack(side='right', fill='y')
 
         #Create frame that will hold the checkbuttons
         self.selection_pane=SelectionPane(self)
-        self.selection_pane.pack(side="left", fill="y", expand=True,
+        self.selection_pane.pack(side='left', fill='y', expand=True,
                                  padx=5, pady=5)
 
         #Create the hover label in the bottom right
-        self.q=tk.Label(self.item_frame, text="?", bd=0,
-                        font=(None, 6), cursor="hand2")
+        self.q=tk.Label(self.item_frame, text='?', bd=0,
+                        font=(None, 6))
         self.q.pack(side=tk.RIGHT, anchor=tk.S)
         self.balloon = Balloon(parent)
-        self.balloon.bind(self.q, 'RRM v3.5\n'
-                          'Emilio Garcia\n'
-                          'SC&I IT Helpdesk')
-        self.q.bind("<Button-1>",
-                    lambda event: webbrowser.open(
-                        'https://github.com/4rm/Ricoh-Resource-Monitor/releases'
-                        )
-                    )
+        self.balloon.bind(self.q, 'Другого дома нет!')
 
 class SelectionPane(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -135,59 +141,28 @@ class SelectionPane(tk.Frame):
                           padx=5, pady=5, borderwidth=2, relief=tk.RIDGE)
         self.parent = parent
 
-        #Initialize list to hold checkbox variables and checkbutton objects
-        self.checklist=[]
-
-        #Create frame to hold 'all' and 'none' buttons
-        self.option_buttons=tk.Frame(self)
-        self.none_check=tk.Checkbutton(self.option_buttons, text="None",
-                                      command=lambda:self.none(),
-                                       cursor="hand2")
-        self.all_check=tk.Checkbutton(self.option_buttons, text="All",
-                                     command=lambda:self.all(),
-                                      cursor="hand2")
-        self.none_check.pack(side=tk.RIGHT)
-        self.all_check.pack(side=tk.LEFT)
+        #Create menu bar
+        self.menubar = tk.Menu(self)
         
-        #For each defined printer, generate a Checkbutton
-        for entry in parent.printers:
-            var=tk.IntVar()
-            self.check=tk.Checkbutton(self, text=entry['Name'], variable=var,
-                                 command=lambda var=var,entry=entry:
-                                      self.spawn_despawn(var.get(), entry),
-                                 cursor="hand2")
-            self.checklist.append([self.check, var])
-            self.check.pack(anchor=tk.W)
-            #If the printer is one that we refill on our paper route, autoload
-            if entry['Name'] in ['CI-121', 'CI-202L', 'CI-202R',
-                                 'CI-335', 'SDW-FL2', 'ANX-A',
-                                 'ANX-B']:
-                self.check.invoke()
+        self.filemenu = tk.Menu(self.menubar, tearoff=0)
+        self.filemenu.add_command(label='Refresh',
+                                  command=lambda:self.set_timeInput())
+        self.filemenu.add_command(label='Edit printer list',
+                                  command=lambda:self.edit_printer_list())
+        self.filemenu.add_separator()
+        self.filemenu.add_command(label='Exit', command=lambda:root.destroy())
+        self.menubar.add_cascade(label='File', menu=self.filemenu)
 
-        #Pack options below other checkbuttons
-        self.option_buttons.pack()
+        self.aboutmenu = tk.Menu(self.menubar, tearoff=0)
+        github_url='https://github.com/4rm/Ricoh-Resource-Monitor/'
+        self.aboutmenu.add_command(label='GitHub',
+                                   command=lambda aurl=github_url:webbrowser.open(aurl))
+        self.aboutmenu.add_separator()
+        self.aboutmenu.add_command(label='About',
+                                   command=lambda:self.about_info())
+        self.menubar.add_cascade(label='Help', menu=self.aboutmenu)
 
-        #Create frame for current paper deficit
-        self.deficit_frame=tk.Frame(self)
-        self.deficit_label=tk.Label(self.deficit_frame,
-                                    text="Current deficit: ",
-                                    font=(None, 9, 'italic'))
-        self.deficit_label.pack(side=tk.LEFT)
-        self.total_deficit=tk.Label(self.deficit_frame,
-                                   textvariable=parent.deficit)
-        self.total_deficit.pack(side=tk.RIGHT)
-        self.deficit_frame.pack(anchor=tk.W, pady=(10,0), fill=tk.BOTH)
-
-        #Create frame for suggested ream count
-        self.ream_frame=tk.Frame(self)
-        self.ream_label=tk.Label(self.ream_frame,
-                                 text="Suggested reams: ",
-                                 font=(None, 9, 'italic'))
-        self.ream_label.pack(side=tk.LEFT)
-        self.ream_count=tk.Label(self.ream_frame,
-                                 textvariable=parent.reams)
-        self.ream_count.pack(side=tk.RIGHT)
-        self.ream_frame.pack(anchor=tk.W, fill=tk.BOTH)
+        root.config(menu=self.menubar)
 
         #Create frame for variable refresh options/prompt
         self.reload_frame=tk.Frame(self)
@@ -196,27 +171,113 @@ class SelectionPane(tk.Frame):
         self.reload_prompt_1.pack(side=tk.LEFT)
         self.reload_time=tk.Entry(self.reload_frame, width=3, insertontime=0)
         self.reload_time.pack(side=tk.LEFT)
-        self.reload_prompt_2=tk.Label(self.reload_frame, text="seconds")
+        self.reload_prompt_2=tk.Label(self.reload_frame, text='seconds')
         self.reload_prompt_2.pack(side=tk.LEFT)
         self.reload_time.insert(tk.END, 600)
-        self.stop_button=tk.Button(self.reload_frame_2, text="Stop",
+        self.stop_button=tk.Button(self.reload_frame_2, text='Stop',
                                    command=lambda:self.reset_timer(),
-                                   width=9, cursor="hand2")
+                                   width=9, cursor='hand2')
         self.stop_button.pack(side=tk.RIGHT)
-        self.refresh_button=tk.Button(self.reload_frame_2, text="Set",
+        self.refresh_button=tk.Button(self.reload_frame_2, text='Set',
                                       command=lambda:self.set_timeInput(),
-                                      width=9, cursor="hand2")
+                                      width=9, cursor='hand2')
         self.refresh_button.pack(side=tk.LEFT)
         self.reload_frame_2.pack(side=tk.BOTTOM, anchor=tk.E, fill=tk.X)
         self.reload_frame.pack(side=tk.BOTTOM, anchor=tk.W, pady=(10,5))
+
+        #Create frame for suggested ream count
+        self.ream_frame=tk.Frame(self)
+        self.ream_label=tk.Label(self.ream_frame,
+                                 text='Suggested reams: ',
+                                 font=(None, 9, 'italic'))
+        self.ream_label.pack(side=tk.LEFT)
+        self.ream_count=tk.Label(self.ream_frame,
+                                 textvariable=parent.reams)
+        self.ream_count.pack(side=tk.RIGHT)
+        self.ream_frame.pack(anchor=tk.W, fill=tk.BOTH, side=tk.BOTTOM)
+
+        #Create frame for current paper deficit
+        self.deficit_frame=tk.Frame(self)
+        self.deficit_label=tk.Label(self.deficit_frame,
+                                    text='Current deficit: ',
+                                    font=(None, 9, 'italic'))
+        self.deficit_label.pack(side=tk.LEFT)
+        self.total_deficit=tk.Label(self.deficit_frame,
+                                    textvariable=parent.deficit)
+        self.total_deficit.pack(side=tk.RIGHT)
+        self.deficit_frame.pack(anchor=tk.W,pady=(10,0),
+                                fill=tk.BOTH,side=tk.BOTTOM)
+
+        #Create frame to hold 'all' and 'none' buttons
+        self.option_buttons=tk.Frame(self)
+        self.none_check=tk.Checkbutton(self.option_buttons, text='None',
+                                      command=lambda:self.none(),
+                                       cursor='hand2')
+        self.all_check=tk.Checkbutton(self.option_buttons, text='All',
+                                     command=lambda:self.all(),
+                                      cursor='hand2')
+        self.none_check.pack(side=tk.RIGHT)
+        self.all_check.pack(side=tk.LEFT)
+
+        self.spawn_checks()
+
+        #Pack options below other checkbuttons
+        self.option_buttons.pack(side=tk.BOTTOM)
 
         #Define variables for variable refresh
         self.active_ID = None
         self.time_input = None
 
+    def spawn_checks(self):
+        self.parent.deficit.set(0)
+
+        #Create loading window
+        self.refresh_window = tk.Toplevel(root)
+        self.refresh_window.attributes('-topmost', 1)
+        self.refresh_window.title('Loading...')
+        if 'nt' == os.name:
+            self.refresh_window.iconbitmap(self.resource_path('images/icon.ico'))
+        self.refresh_window.lift()
+        
+        logo_canvas=tk.Canvas(self.refresh_window, width=300, height=180)
+        logo_canvas.pack()
+        self.logo=tk.PhotoImage(file=self.resource_path('images/icon.gif'))
+        logo_canvas.create_image(150, 90, image=self.logo)
+        
+        #Initialize list to hold checkbox variables and checkbutton objects
+        self.checklist=[]
+        try:
+            self.printer_check_frame.destroy()
+        except Exception as e:
+            print(e)
+        self.printer_check_frame = tk.Frame(self)
+        self.printer_check_frame.pack(anchor=tk.NW, side=tk.TOP)
+        
+        #For each defined printer, generate a Checkbutton
+        for entry in self.parent.printers:
+            loading_message='Establishing connection: '+entry['Name']+'...'
+            current_printer = tk.Label(self.refresh_window,
+                                       text=loading_message,
+                                       font=(None,10))
+            current_printer.pack(pady=(0,10))
+            self.refresh_window.update()
+            var=tk.IntVar()
+            self.check=tk.Checkbutton(self.printer_check_frame,
+                                      text=entry['Name'], variable=var,
+                                      command=lambda var=var,entry=entry:
+                                          self.spawn_despawn(var.get(), entry),
+                                      cursor='hand2')
+            self.checklist.append([self.check, var])
+            self.check.pack(anchor=tk.W)
+            #If the printer is one that we refill on our paper route, autoload
+            if entry['Default'] == True:
+                self.check.invoke()
+            current_printer.destroy()
+        self.refresh_window.destroy()
+
     def spawn_despawn(self, status, name):
         self.none_check.deselect()
-        print(name['Name'] + " toggled " + str(status))
+        print(name['Name'] + ' toggled ' + str(status))
         if status==1:
             #If checkbox is checked, spawn printer frame
             self.printer_instance=PrinterFrame(self.parent.item_frame,name)
@@ -231,7 +292,7 @@ class SelectionPane(tk.Frame):
                     '.!mainapplication.!itemframe.a'+name['Name']).deficit())
                 self.parent.reams.set(self.parent.deficit.get()/500)
             except Exception as e:
-                #Might fail if a "No Connection" frame is spawned
+                #Might fail if a 'No Connection' frame is spawned
                 print(e)
             try:
                 #Remove printer frames by name
@@ -296,6 +357,110 @@ class SelectionPane(tk.Frame):
         if self.active_ID is not None: 
             self.after_cancel(self.active_ID)
             self.active_ID=None
+
+    def edit_printer_list(self):
+        self.printer_edit_window = tk.Toplevel(root)
+        self.printer_edit_window.attributes('-topmost', 1)
+        self.printer_edit_window.title('Edit printer list')
+        if 'nt' == os.name:
+            self.printer_edit_window.iconbitmap(self.resource_path('images/icon.ico'))
+        self.printer_edit_window.lift()
+
+        self.instruction_frame = tk.Frame(self.printer_edit_window)
+        self.instruction_frame.pack(anchor=tk.W, side=tk.TOP)
+        edit_prompt = tk.Label(self.instruction_frame,
+                               text='Enter printer information',
+                               font=(None, 14, 'bold'))
+        edit_prompt.pack(side=tk.TOP, anchor=tk.W)
+        edit_guide = tk.Label(self.instruction_frame,
+                              text='IP,Name,Serial(Optional),EID(Optional),Default',
+                              font=(None, 9))
+        edit_guide.pack(side=tk.BOTTOM, anchor=tk.W)
+
+        self.edit_pane = tk.Text(self.printer_edit_window, width=70, height=15)
+        self.edit_pane.pack(fill=tk.BOTH, expand=True)
+
+        #autopopulate with current list
+        self.write_printers(self.parent.printers)
+
+        button_frame = tk.Frame(self.printer_edit_window)
+        button_frame.pack(fill=tk.X, side=tk.BOTTOM)
+        apply_button = tk.Button(button_frame, text='Apply',
+                                 command=lambda:self.apply_printer_list(),
+                                 pady=5, height=2)
+        apply_button.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        reset_button = tk.Button(button_frame, text='Reset Field',
+                                 command=lambda:self.write_printers(self.parent.default_printers),
+                                 pady=5, height=2)
+        reset_button.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
+    def apply_printer_list(self):
+        new_list = self.edit_pane.get('1.0',tk.END)
+        try:
+            new_list = new_list.split('\n')
+
+            #remove empty lines
+            new_list = [i for i in new_list if i]
+            
+            self.parent.printers = []
+            for line in new_list:
+                line = line.split(',')
+                self.parent.printers.append({'IP':line[0],
+                                             'Name':line[1],
+                                             'Serial':line[2],
+                                             'EID':line[3],
+                                             'Default': self.return_bool(line[4])})
+            with open('Printers.pkl', 'wb') as f:
+                pickle.dump(self.parent.printers, f)
+            self.printer_edit_window.destroy()
+            self.spawn_checks()
+        except:
+            #If bad input is given, reset to default list
+            self.write_printers(self.parent.default_printers)
+
+    def write_printers(self, printers_dict):
+        self.edit_pane.delete('1.0',tk.END)
+        for printer in printers_dict:
+            self.edit_pane.insert(tk.END, printer['IP']+',')
+            self.edit_pane.insert(tk.END, printer['Name']+',')
+            self.edit_pane.insert(tk.END, printer['Serial']+',')
+            self.edit_pane.insert(tk.END, printer['EID']+',')
+            self.edit_pane.insert(tk.END, str(printer['Default'])+'\n')
+
+    def resource_path(self, relative_path):
+        #Get absolute path to resource, works for dev and for
+        #PyInstaller - Found on stackoverflow
+        try:
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath('.')
+        return os.path.join(base_path, relative_path)
+
+    def about_info(self):
+        about_popup=tk.Toplevel()
+        about_popup.attributes('-topmost', 1)
+        about_popup.wm_title('About')
+        if 'nt' == os.name:
+            about_popup.iconbitmap(self.resource_path('images/icon.ico'))
+        about_popup.lift()
+        program_name=tk.Label(about_popup,
+                              text='Ricoh Resource Monitor v3.6',
+                              font=(None,14))
+        program_name.pack()
+        logo_canvas=tk.Canvas(about_popup, width=300, height=180)
+        logo_canvas.pack()
+        self.logo=tk.PhotoImage(file=self.resource_path('images/icon.gif'))
+        logo_canvas.create_image(150, 90, image=self.logo)
+        tagline=tk.Label(about_popup,
+                         text='Developed by Emilio Garcia\nSC&I IT Helpdesk\nRutgers University')
+        tagline.pack(pady=(0,15))
+
+    def return_bool(self, text_input):
+        #convert text input to bool
+        if text_input in ['true', 'True', 'TRUE', 't', 'T']:
+            return True
+        else:
+            return False
             
 class ItemFrame(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -305,7 +470,7 @@ class ItemFrame(tk.Frame):
 
 class PrinterFrame(tk.Frame):
     def __init__(self, parent, printer):
-        tk.Frame.__init__(self, parent, name="a"+printer['Name'], padx=5)
+        tk.Frame.__init__(self, parent, name='a'+printer['Name'], padx=5)
         #initialize frame with name of printer (preface with 'a' because name
         #can't start with a capital letter
         
@@ -328,10 +493,10 @@ class PrinterFrame(tk.Frame):
             printer_model.pack()
 
             url='http://' + printer['IP'] + '/web/guest/en/websys/webArch/mainFrame.cgi'
-            printer_IP=tk.Label(self, text=printer['IP'], fg="blue",
-                               font=(None, 8, 'underline'), cursor="hand2")
+            printer_IP=tk.Label(self, text=printer['IP'], fg='blue',
+                               font=(None, 8, 'underline'), cursor='hand2')
             balloon.bind(printer_IP, 'Go to printer control panel')
-            printer_IP.bind("<Button-1>",
+            printer_IP.bind('<Button-1>',
                             lambda event,aurl=url:webbrowser.open(aurl))
             #Bind event property to label to create a hyperlink
             printer_IP.pack()
@@ -382,6 +547,9 @@ class PrinterFrame(tk.Frame):
                 if printer_image is None:
                     #If the image still has not been set, it must be non-LCT C6503
                     printer_image=parent.parent.c6503
+            else:
+                #If user added model does not have an image
+                printer_image=parent.parent.missing_model
 
             #Now that we know where the image should point to, create image object
             printer_image_canvas=tk.Canvas(self, width=135, height=140)
@@ -402,7 +570,7 @@ class PrinterFrame(tk.Frame):
                 inner_ink_frame.pack(pady=0)
                 ink_bar=ttk.Progressbar(inner_ink_frame, value=item[1],
                                        style=parent.parent.styles[i][0])
-                ink_level=tk.Label(inner_ink_frame, text="   "+str(item[1])+"%",
+                ink_level=tk.Label(inner_ink_frame, text='   '+str(item[1])+'%',
                                    foreground='red' if item[1]<=20 else 'black',
                                    bd=0, width=5)
                 ink_bar.pack(side=tk.LEFT, pady=0)
@@ -454,7 +622,7 @@ class PrinterFrame(tk.Frame):
                 tray_info.pack_propagate(0)
                 tray_info.pack(side=tk.RIGHT)
                 
-                tray_label=tk.Label(tray_line, text=item + ": ",
+                tray_label=tk.Label(tray_line, text=item + ': ',
                                     font=(None, 9, 'bold'),
                                     foreground=label_color)
                 tray_label.pack(side=tk.LEFT, anchor=tk.W)
@@ -523,23 +691,23 @@ class PrinterFrame(tk.Frame):
                                               image=parent.parent.no_connection,
                                               anchor=tk.SE)
             no_connection_canvas.image=parent.parent.no_connection
-            no_connection_label_top=tk.Label(self, text="No Connection!",
+            no_connection_label_top=tk.Label(self, text='No Connection!',
                                           foreground='red', bd=0)
             no_connection_label_bottom=tk.Frame(self)
             no_connection_label2=tk.Label(no_connection_label_bottom,
-                                          text="Check the ",
+                                          text='Check the ',
                                           foreground='red', bd=0)
             no_connection_label2.pack(side=tk.LEFT)
             no_connection_label3=tk.Label(no_connection_label_bottom,
-                                         text="log file",
-                                         foreground='blue', cursor="hand2",
+                                         text='log file',
+                                         foreground='blue', cursor='hand2',
                                          font=(None, 9, 'underline'),
                                          bd=0)
-            no_connection_label3.bind("<Button-1>",
+            no_connection_label3.bind('<Button-1>',
                             lambda event:os.startfile(log_name))
             no_connection_label3.pack(side=tk.LEFT)
             no_connection_label4=tk.Label(no_connection_label_bottom,
-                                          text=" for more info",
+                                          text=' for more info',
                                           foreground='red', bd=0)
             no_connection_label4.pack(side=tk.RIGHT)
             no_connection_label_top.pack()
@@ -555,11 +723,11 @@ class PrinterFrame(tk.Frame):
         #Return the printer's paper deficit to subtract when despawning frame
         return self.printer_deficit
             
-if __name__ == "__main__":
+if __name__ == '__main__':
     root=tk.Tk()
     #Set resizable to False in X,Y. Trust the program to resize itself :)
     root.resizable(False, False)
-    MainApplication(root).pack(side="top", fill="both", expand=True)
+    MainApplication(root).pack(side='top', fill='both', expand=True)
     if 'TRAVIS' in os.environ:
         root.update()
         root.update_idletasks()
