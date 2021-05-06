@@ -11,6 +11,7 @@ GUI to monitor ink and paper tray levels at work. Values are gathered using SNMP
 <b><p align="center">Contents</p></b>
 <li><a href="#Tech">Technology used</a></li>
 <li><a href="#How">How it works</a></li>
+  <ul><li><a href="Editing">Editing printer list</a></li></ul>
 <li><a href="#Known">Known Issues</a></li>
 <li><a href="#Thanks">Thanks</a></li>
 </ul></td></tr>
@@ -43,6 +44,16 @@ All of the printers are networked with publicly available SNMP values. As long a
 |Current Tray Fill|.1.3.6.1.2.1.43.8.2.1.10.1|Walk|
 |Max Tray Fill|.1.3.6.1.2.1.43.8.2.1.9.1|Walk|
 |Printer Errors|.1.3.6.1.2.1.43.18.1.1.8.1|Walk|
+
+### <a name="Editing">Editing printer list</a>
+
+You can add or remove a printer by going to `File -> Edit Printer List`
+
+<img src="https://user-images.githubusercontent.com/3399474/117365336-26d44780-ae8d-11eb-8d9e-06d80bc00340.png" alt="Printer list screenshot" width=450>
+
+To add a printer, the `Name`, `IP`, and `Default` fields are required; the `Serial` and `EID` fields are not, so their spaces can be left blank, eg: `123.12.123.123,My Printer,,,True`. The `Default` field determines whether the printer is loaded by default when launching the program.
+
+`Reset Field` will return the printer list to its default state as of 5/6/21.
 
 ## <a name="Known">Known Issues</a>
 
